@@ -8,7 +8,7 @@ CRASHCMD=${CRASHCMD:=""}
 docker run -dit \
     --ulimit nofile=1048576:1048576 \
     --ulimit memlock=8388608:8388608 \
-    --memory=12gb \
+    --memory=1.5gb \
     --shm-size=500mb \
     --name lazypostgres-$CONTAINER_ID \
     --device /dev/fuse \
