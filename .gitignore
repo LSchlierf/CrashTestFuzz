@@ -1,0 +1,10 @@
+# dev ignores
+.vscode
+__pycache__
+todo.txt
+
+# data ignores
+logs
+*.log
+test.*
+SUT/*/container
