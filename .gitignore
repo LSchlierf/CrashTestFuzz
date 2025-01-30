@@ -6,5 +6,6 @@ todo.txt
 # data ignores
 logs
 *.log
-test.*
+*test.*
+*Test.*
 SUT/*/container
