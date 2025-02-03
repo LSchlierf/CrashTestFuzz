@@ -18,8 +18,8 @@ import uuid
 ####################
 
 def getThreadId():
-    if hasattr(tld, "number"):
-        return f" \033[34m[Thread {tld.batch}|{tld.number:02d}]\033[0m"
+    if hasattr(tls, "number"):
+        return f" \033[34m[Thread {tls.batch}|{tls.number:02d}]\033[0m"
     return ""
 
 def getTimeStamp():
@@ -36,12 +36,12 @@ def debug(*msg, multiline=False, level=3):
 
 def info(*msg):
     print("\033[36m[ INFO  ]\033[0m \033[32m" + getTimeStamp() + "\033[0m" + getThreadId(), *msg, flush=True)
-    
+
 ##################
 # WORKLOAD UTILS #
 ##################
 
-def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
+def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
     """runs a workload on a given postgres port
     
     Arguments:
@@ -52,7 +52,7 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
     
     All other parameters are passed via the shared module
     """
-    
+    # TODO: document following shared inputs
     """
     Given via shared module:
     transactions                (required) - number of transactions
@@ -137,7 +137,7 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
             except:
                 return (dbContent, metadata, log)
             
-            openConns.append({"c": newConn, "id": cid, "numStatements": numStatements, "statements": [], "localContent": dbContent.copy(), "startingPoint": dbContent.copy(), "lockedVals": set()})
+            openConns.append({"c": newConn, "id": cid, "numStatements": numStatements, "statements": [], "localContent": dbContent.copy(), "lockedVals": set()})
             
             remainingTransactions -= 1
             cid += 1
@@ -149,12 +149,13 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
             ####################################
             
             transactionIndex = r.randrange(len(openConns))
+            currConn = openConns[transactionIndex]
             stmtTypeP = r.random()
             count = max(1, round(r.gauss(tMu, tVar)))
             
             expectCC = False
             
-            if stmtTypeP < shared.P_INSERT or len(set(openConns[transactionIndex]["localContent"]) - lockedItems) < count:
+            if stmtTypeP < shared.P_INSERT or len(set(currConn["localContent"]) - lockedItems) < count:
                 
                 ##########
                 # INSERT #
@@ -162,14 +163,14 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                 
                 stmtType = "insert"
                 metadata["numInsert"] += 1
-                values = [(len(openConns[transactionIndex]["localContent"]) + i, aid) for i in range(count)]
+                values = [(len(currConn["localContent"]) + i, aid) for i in range(count)]
                 
-                debug("insert", count, "on transaction", openConns[transactionIndex]["id"], values, level=4)
+                debug("insert", count, "on transaction", currConn["id"], values, level=4)
                 
                 if makeLog:
                     log.append({
                         "type": "insert",
-                        "transaction": openConns[transactionIndex]["id"],
+                        "transaction": currConn["id"],
                         "statement": aid,
                         "count": count,
                         "values": values.copy()
@@ -179,8 +180,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                 args = (values.copy())
                 
                 try:
-                    insert(openConns[transactionIndex]["c"], values)
-                    clientInsert((openConns[transactionIndex]["localContent"], values))
+                    insert(currConn["c"], values)
+                    clientInsert((currConn["localContent"], values))
                 except Exception as e:
                     error(type(e), "exception occurred", type(e), e)
                     return (dbContent, metadata, log)
@@ -193,24 +194,24 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                 
                 stmtType = "update"
                 metadata["numUpdate"] += 1
-                expectCC = r.random() < shared.P_SERIALIZATION_FAILURE and len(set(openConns[transactionIndex]["localContent"]) & lockedItems) >= count
+                expectCC = r.random() < shared.P_SERIALIZATION_FAILURE and len(set(currConn["localContent"]) & lockedItems) >= count
                 
-                debug(len(set(openConns[transactionIndex]["localContent"]) & lockedItems), level=4)
+                debug(len(set(currConn["localContent"]) & lockedItems), level=4)
                 
                 if expectCC:
-                    valsToEdit = [v for v in openConns[transactionIndex]["localContent"] if v in lockedItems][-count:]
+                    valsToEdit = [v for v in currConn["localContent"] if v in lockedItems][-count:]
                     metadata["numCCUpdate"] += 1
                     debug("expecting serialization failure", level=4)
                 else:
-                    valsToEdit = [v for v in openConns[transactionIndex]["localContent"] if not v in lockedItems][-count:]
+                    valsToEdit = [v for v in currConn["localContent"] if not v in lockedItems][-count:]
                         
                 
-                debug("update", count, "on transaction", openConns[transactionIndex]["id"], aid, valsToEdit, level=4)
+                debug("update", count, "on transaction", currConn["id"], aid, valsToEdit, level=4)
                 
                 if makeLog:
                     log.append({
                         "type": "update",
-                        "transaction": openConns[transactionIndex]["id"],
+                        "transaction": currConn["id"],
                         "statement": aid,
                         "count": count,
                         "values": valsToEdit.copy()
@@ -221,12 +222,12 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                 
                 try:
                     
-                    update(openConns[transactionIndex]["c"], valsToEdit, aid)
+                    update(currConn["c"], valsToEdit, aid)
                     if expectCC:
                         error("Expected concurrency conflict")
                         return (dbContent, metadata, log)
-                    clientUpdate((openConns[transactionIndex]["localContent"], (valsToEdit, aid)))
-                    openConns[transactionIndex]["lockedVals"] |= set(valsToEdit)
+                    clientUpdate((currConn["localContent"], (valsToEdit, aid)))
+                    currConn["lockedVals"] |= set(valsToEdit)
                     lockedItems |= set(valsToEdit)
                 
                 except (psycopg2.errors.SerializationFailure, psycopg2.errors.LockNotAvailable):
@@ -235,12 +236,12 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                         error("Didn't expect concurrency conflict")
                         return (dbContent, metadata, log)
                     debug("concurrency conflict, need to rollback", level=4)
-                    openConns[transactionIndex]["c"].rollback()
-                    openConns[transactionIndex]["statements"] = []
-                    # openConns[transactionIndex]["localContent"] = openConns[transactionIndex]["startingPoint"].copy()
-                    openConns[transactionIndex]["localContent"] = dbContent.copy()
-                    lockedItems -= openConns[transactionIndex]["lockedVals"]
-                    openConns[transactionIndex]["lockedVals"] = set()
+                    currConn["c"].rollback()
+                    currConn["statements"] = []
+                    # currConn["localContent"] = currConn          
+                    currConn["localContent"] = dbContent.copy()
+                    lockedItems -= currConn["lockedVals"]
+                    currConn["lockedVals"] = set()
                     aid += 1
                     
                     if makeLog:
@@ -261,23 +262,23 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                 
                 stmtType = "delete"
                 metadata["numDelete"] += 1
-                expectCC = r.random() < shared.P_SERIALIZATION_FAILURE and len(set(openConns[transactionIndex]["localContent"]) & lockedItems) >= count
+                expectCC = r.random() < shared.P_SERIALIZATION_FAILURE and len(set(currConn["localContent"]) & lockedItems) >= count
                 
-                debug(len(set(openConns[transactionIndex]["localContent"]) & lockedItems), level=4)
+                debug(len(set(currConn["localContent"]) & lockedItems), level=4)
                 
                 if expectCC:
-                    valsToRm = [v for v in openConns[transactionIndex]["localContent"] if v in lockedItems][-count:]
+                    valsToRm = [v for v in currConn["localContent"] if v in lockedItems][-count:]
                     metadata["numCCDelete"] += 1
                     debug("expecting serialization failure", level=4)
                 else:
-                    valsToRm = [v for v in openConns[transactionIndex]["localContent"] if not v in lockedItems][-count:]
+                    valsToRm = [v for v in currConn["localContent"] if not v in lockedItems][-count:]
                 
-                debug("delete", count, "on transaction", openConns[transactionIndex]["id"], valsToRm, level=4)
+                debug("delete", count, "on transaction", currConn["id"], valsToRm, level=4)
                 
                 if makeLog:
                     log.append({
                         "type": "delete",
-                        "transaction": openConns[transactionIndex]["id"],
+                        "transaction": currConn["id"],
                         "statement": aid,
                         "count": count,
                         "values": valsToRm.copy()
@@ -288,12 +289,12 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                 
                 try:
                     
-                    delete(openConns[transactionIndex]["c"], valsToRm)
+                    delete(currConn["c"], valsToRm)
                     if expectCC:
                         error("Expected concurrency conflict")
                         return (dbContent, metadata, log)
-                    clientDelete((openConns[transactionIndex]["localContent"], valsToRm))
-                    openConns[transactionIndex]["lockedVals"] |= set(valsToRm)
+                    clientDelete((currConn["localContent"], valsToRm))
+                    currConn["lockedVals"] |= set(valsToRm)
                     lockedItems |= set(valsToRm)
                 
                 except (psycopg2.errors.SerializationFailure, psycopg2.errors.LockNotAvailable):
@@ -302,12 +303,12 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                         error("Didn't expect concurrency conflict")
                         return (dbContent, metadata, log)
                     debug("concurrency conflict, need to rollback", level=4)
-                    openConns[transactionIndex]["c"].rollback()
-                    openConns[transactionIndex]["statements"] = []
-                    # openConns[transactionIndex]["localContent"] = openConns[transactionIndex]["startingPoint"].copy()
-                    openConns[transactionIndex]["localContent"] = dbContent.copy()
-                    lockedItems -= openConns[transactionIndex]["lockedVals"]
-                    openConns[transactionIndex]["lockedVals"] = set()
+                    currConn["c"].rollback()
+                    currConn["statements"] = []
+                    # currConn["localContent"] = currConn          
+                    currConn["localContent"] = dbContent.copy()
+                    lockedItems -= currConn["lockedVals"]
+                    currConn["lockedVals"] = set()
                     aid += 1
                     
                     if makeLog:
@@ -321,12 +322,12 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
                     return (dbContent, metadata, log)
             
             aid = aid + 1
-            openConns[transactionIndex]["statements"].append((fun, args))
+            currConn["statements"].append((fun, args))
             
-            debug(stmtType, count, "in transaction", openConns[transactionIndex]["id"], level=4)
+            debug(stmtType, count, "in transaction", currConn["id"], level=4)
             
-            if len(openConns[transactionIndex]["statements"]) >= openConns[transactionIndex]["numStatements"]:
-                debug("all statements run on conn", openConns[transactionIndex]["id"], level=4)
+            if len(currConn["statements"]) >= currConn["numStatements"]:
+                debug("all statements run on conn", currConn["id"], level=4)
                 finishedTransactions.append(openConns.pop(transactionIndex))
         
         else:
@@ -346,6 +347,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll = None, logPipe = None):
             
                 debug("commit transaction", transaction["id"], level=4)
                 metadata["numCommit"] += 1
+                
+                # lockedItems -= transaction["lockedVals"]
                 
                 if makeLog:
                     log.append({
@@ -452,11 +455,11 @@ def insert(conn, values):
     cur = conn.cursor()
     cur.execute("INSERT INTO " + shared.DB_TABLENAME + " VALUES " + ', '.join(str(v) for v in values) + ";")
     debug(cur.rowcount, level=4)
-    
+
 def clientInsert(args):
     (content, values) = args
     content[len(content):] = values
-    
+
 def update(conn, vals, newAction):
     cur = conn.cursor()
     if shared.SUT == "postgres":
@@ -473,7 +476,7 @@ def clientUpdate(args):
         (a, b) = content[i]
         if (a, b) in valsToEdit:
             content[i] = (a, newAction)
-            
+
 def delete(conn, vals):
     cur = conn.cursor()
     if shared.SUT == "postgres":
@@ -482,13 +485,13 @@ def delete(conn, vals):
     else:
         cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE" + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
     debug(cur.rowcount, level=4)
-                
+
 def clientDelete(args):
     (content, valsToRm) = args
     for v in valsToRm:
         while v in content:
             content.remove(v)
-        
+
 def dump(name, port):
     with connect(port) as conn:
         cur = conn.cursor()
@@ -520,21 +523,33 @@ def verify(name, content, port, kill=False):
 
 def buildSUTImage(wal_sync_method=None):
     debug("building SUT, " + "no WAL_SYNC_METHOD given" if wal_sync_method is None else "WAL_SYNC_METHOD is " + wal_sync_method, level=2)
-    os.system("cd " + os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]).replace(" ", "\\ ") + "; bash ./build-image.sh " + ("" if wal_sync_method is None else wal_sync_method) + ("" if 4 <= shared.DEBUG_LEVEL else " > /dev/null 2>&1"))
+    r = subprocess.run(["bash", "./build-image.sh", ("" if wal_sync_method is None else wal_sync_method)], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        error("building SUT failed with code", r.returncode)
+        error(r.stdout)
+        error(r.stderr, kill=True)
     debug("\033[1mdone\033[0m building", level=2)
-    
+
 def prepHostEnvironment(containerID=None):
     debug("preparing host environment", level=2)
     if containerID is None:
         containerID = str(uuid.uuid4())
         debug("no container ID given, generated ID " + containerID, level=3)
-    os.system("cd " + os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]).replace(" ", "\\ ") + "; bash ./prep-env.sh " + containerID + ("" if 4 <= shared.DEBUG_LEVEL else " > /dev/null 2>&1"))
+    r = subprocess.run(["bash", "./prep-env.sh", containerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        error("preparing host environment failed with code", r.returncode)
+        error(r.stdout)
+        error(r.stderr, kill=True)
     debug("\033[1mdone\033[0m preparing env", level=2)
     return containerID
 
 def runContainer(containerID, port=0, crashcmd=""):
     debug("running container", containerID, level=2)
-    os.system("cd " + os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]).replace(" ", "\\ ") + "; bash ./run-container.sh " + containerID + " " + str(port) + (" \"" + crashcmd.replace("\"", "\\\"") + "\"" if crashcmd != "" else "") + ("" if 4 <= shared.DEBUG_LEVEL else " > /dev/null 2>&1"))
+    r = subprocess.run(["bash", "./run-container.sh", containerID, str(port), crashcmd], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        error("running container failed with code", r.returncode)
+        error(r.stdout)
+        error(r.stderr, kill=True)
     if port == 0:
         debug("No port given", level=3)
         port = getPort(containerID)
@@ -543,33 +558,53 @@ def runContainer(containerID, port=0, crashcmd=""):
 
 def stopSUT(containerID):
     debug("stopping SUT", containerID, level=2)
-    os.system("cd " + os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]).replace(" ", "\\ ") + "; bash ./stop-sut.sh " + containerID + ("" if 4 <= shared.DEBUG_LEVEL else " > /dev/null 2>&1"))
+    r = subprocess.run(["bash", "./stop-sut.sh", containerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        error("stopping SUT failed with code", r.returncode)
+        error(r.stdout)
+        error(r.stderr, kill=True)
     debug("\033[1mdone\033[0m stopping SUT", level=2)
 
 def stopContainer(containerID):
     debug("stopping container", containerID, level=2)
-    os.system("cd " + os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]).replace(" ", "\\ ") + "; bash ./stop-container.sh " + containerID + ("" if 4 <= shared.DEBUG_LEVEL else " > /dev/null 2>&1"))
+    r = subprocess.run(["bash", "./stop-container.sh", containerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        error("stopping container failed with code", r.returncode)
+        error(r.stdout)
+        error(r.stderr, kill=True)
     debug("\033[1mdone\033[0m stopping container", level=2)
-    
+
 def cleanupEnv(containerID):
     debug("cleaning up host environment", containerID, level=2)
-    os.system("cd " + os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]).replace(" ", "\\ ") + "; bash ./cleanup-env.sh " + containerID + ("" if 4 <= shared.DEBUG_LEVEL else " > /dev/null 2>&1"))
+    r = subprocess.run(["bash", "./cleanup-env.sh", containerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        error("cleaning up host environment failed with code", r.returncode)
+        error(r.stdout)
+        error(r.stderr, kill=True)
     debug("\033[1mdone\033[0m cleaning up env", level=2)
-    
+
 def cleanupContainer(containerID):
     stopContainer(containerID)
     cleanupEnv(containerID)
-    
+
 def cleanupEnvs():
     debug("cleaning up all envs", level=2)
-    os.system("cd " + os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]).replace(" ", "\\ ") + "; bash ./cleanup-envs.sh " + ("" if 4 <= shared.DEBUG_LEVEL else " > /dev/null 2>&1"))
+    r = subprocess.run(["bash", "./cleanup-envs.sh"], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        error("cleaning up all envs failed with code", r.returncode)
+        error(r.stdout)
+        error(r.stderr, kill=True)
     debug("\033[1mdone\033[0m cleaning up", level=2)
-    
+
 def cleanupAll():
     debug("cleaning up all", level=2)
-    os.system("cd " + os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]).replace(" ", "\\ ") + "; bash ./cleanup-all.sh " + ("" if 4 <= shared.DEBUG_LEVEL else " > /dev/null 2>&1"))
+    r = subprocess.run(["bash", "./cleanup-all.sh"], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if r.returncode != 0:
+        error("cleaning up all failed with code", r.returncode)
+        error(r.stdout)
+        error(r.stderr, kill=True)
     debug("\033[1mdone\033[0m cleaning up", level=2)
-    
+
 def getPort(containerID):
     port = 0
     tries = 1
@@ -592,11 +627,11 @@ def getPort(containerID):
                 exit(1)
             tries += 1
             time.sleep(0.5)
-    
+
 ######################
 # FILE CONTROL UTILS #
 ######################
- 
+
 def commandIntoFifo(containerID, cmd):
     debug("writing into fifo for container", containerID, cmd, level=2)
     with open(os.sep.join(["SUT", shared.SUT, "container", "container-" + containerID, "faults.fifo"]), "w") as fifo:
@@ -627,6 +662,10 @@ def pollReader(poll, pipe):
     debug("\033[1mdone\033[0m polling log", level=2)
     return l
 
+def closeReader(pipe):
+    if pipe is not None:
+        pipe.kill()
+
 def dumpIntoFile(path, content, force=False):
     if force:
         with open(path, "w") as f:
@@ -639,12 +678,12 @@ def dumpIntoFile(path, content, force=False):
 # MISC UTILS #
 ##############
 
-tld = local()
-     
+tls = local()
+
 def sleep(secs):
     debug(f"sleeping for {secs} seconds", level=2)
     time.sleep(secs)
-            
+
 def traceHash(log):
     newLog = []
     # filter out lazyfs logs
@@ -668,155 +707,3 @@ def extractFiles(logs):
             files[path][op] = 0
         files[path][op] += 1
     return files
-
-# def generateWorkload(transactionTarget, seed=None):
-#     debug("generating workload", level=2)
-#     actions = []
-#     connSource = transactionTarget
-#     openConns = 0
-#     doneActions = 0
-#     transactions = 0
-#     content = 0
-#     if seed is None:
-#         seed = int(time.time()) % 100_000
-#         debug("no seed given", level=3)
-#     debug("seed:", seed, "number of transactions:", transactionTarget)
-#     random.seed(seed)
-    
-#     # possible actions:
-#     # open new conn -> inserts into opened      / always
-#     # use open conn -> moves to actioned        / has open conn
-#     #   insert always
-#     #   update when available data
-#     #   delete when available data
-#     # commit actioned -> finished transaction   / has action
-    
-#     while transactions < transactionTarget:
-#         action = random.randint(0,99)
-#         if (action >= 50 and doneActions > 0) or (openConns == 0 and connSource == 0):
-#             debug("commit", level=4)
-#             doneActions -= 1
-#             transactions += 1
-#             actions.append({"type": "commit", "conn": random.randint(0, doneActions)})
-#         elif (action >= 10 and openConns > 0) or connSource == 0:
-#             stmttype = action % 10
-#             if stmttype > 4 or content < 10:
-#                 stmt = "insert"
-#                 count = random.randint(10,100)
-#                 content += count
-#             elif stmttype > 1:
-#                 stmt = "update"
-#                 count = random.randint(10, min(100, content))
-#             else:
-#                 stmt = "delete"
-#                 count = random.randint(10, min(100, content))
-#                 content -= count
-#             debug("statement", stmt, count, level=4)
-#             openConns -= 1
-#             doneActions += 1
-#             actions.append({"type": "statement", "conn": random.randint(0, openConns), "statement": stmt, "count": count})
-#         elif connSource > 0:
-#             debug("open", level=4)
-#             connSource -= 1
-#             openConns += 1
-#             actions.append({"type": "open"})
-#         else:
-#             error("no action selected, seed:", seed, "action:", action)
-#         debug("\tuntouched:", connSource, "open:", openConns, "finished:", doneActions, "committed:", transactions, "data items:", content, level=4)
-        
-#     return (actions, seed)
-
-# def runWorkload(port, actions):
-#     debug("running workload on port", port, level=2)
-#     curAction = 0
-#     openConns = []
-#     finishedActions = []
-#     content = []
-#     success = False
-#     while curAction < len(actions) and executeAction(actions[curAction], curAction, port, openConns, finishedActions, content):
-#         # dbcontent = dump(DB_TABLENAME, port=port)
-#         # debug(content, level=4)
-#         # debug(dbcontent, level=4)
-#         # debug("Table size equal" if len(content) == len(dbcontent) else ("Table size different: " + str(len(content)) + " expected but " + str(len(dbcontent)) + " actual"), level=3)
-#         # verify(DB_TABLENAME, content, port=port)
-#         curAction += 1
-#     if curAction == len(actions):
-#         debug("workload ran without errors", level=2)
-#         success = True
-#     return (content, success)
-
-# def executeAction(action, actionNumber, port, openConns, finishedActions, content):
-#     match action["type"]:
-#         case "open":
-#             debug("open", level=4)
-#             try:
-#                 conn = connect(port)
-#                 openConns.append(conn)
-#             except Exception as e:
-#                 debug("open failed", e, type(e), level=3)
-#                 return False
-        
-#         case "statement":
-#             connNum = action["conn"]
-#             stmt = action["statement"]
-#             count = action["count"]
-#             conn = openConns.pop(connNum)
-#             if stmt == "insert":
-#                 debug("insert", level=4)
-#                 values = [(a, actionNumber) for a in range(len(content), len(content) + count)]
-#                 try:
-#                     insert(conn, values)
-#                     fun = lambda : clientInsert(content, values)
-#                     finishedActions.append((conn, fun))
-#                 except Exception as e:
-#                     debug("insert failed", action, e, type(e), level=3)
-#                     return False
-            
-#             elif stmt == "update":
-#                 debug("update", level=4)
-#                 try:
-#                     update(conn, len(content) - count, actionNumber)
-#                     startingPoint = len(content) - count
-#                     valsToRemove = [(a,b) for (a,b) in content if a >= startingPoint]
-#                     valsToInsert = [(a,actionNumber) for (a,_) in content if a >= startingPoint]
-#                     fun = lambda : clientUpdate(content, valsToRemove, valsToInsert)
-#                     finishedActions.append((conn, fun))
-#                 except psycopg2.errors.SerializationFailure:
-#                     debug("Concurrency conflict", level=4)
-#                     fun = lambda : None
-#                     finishedActions.append((conn, fun))
-#                 except Exception as e:
-#                     debug("update failed", action, e, type(e), level=3)
-#                     return False
-            
-#             elif stmt == "delete":
-#                 debug("delete", level=4)
-#                 try:
-#                     delete(conn, len(content) - count)
-#                     startingPoint = len(content) - count
-#                     valsToDelete = [(a,b) for (a,b) in content if a >= startingPoint]
-#                     fun = lambda : clientDelete(content, valsToDelete)
-#                     finishedActions.append((conn, fun))
-#                 except psycopg2.errors.SerializationFailure:
-#                     debug("Concurrency conflict", level=4)
-#                     fun = lambda : None
-#                     finishedActions.append((conn, fun))
-#                 except Exception as e:
-#                     debug("delete failed", action, e, type(e), level=3)
-#                     return False
-            
-#             else:
-#                 error("encountered invalid statement", kill=True)
-                
-#         case "commit":
-#             debug("commit", level=4)
-#             try:
-#                 connNum = action["conn"]
-#                 (conn, fun) = finishedActions.pop(connNum)
-#                 conn.commit()
-#                 fun()
-#             except Exception as e:
-#                 debug("commit failed", action, e, type(e), level=3)
-#                 return False
-                
-#     return True
