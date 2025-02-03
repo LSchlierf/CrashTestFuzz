@@ -18,9 +18,9 @@ RUN ./build.sh
 WORKDIR /
 
 # copy local lazyfs config into container
-COPY ./config.toml /lazyfs/lazyfs/config/default.toml
-RUN chmod a+r /lazyfs/lazyfs/config/default.toml
-RUN chmod a+w /lazyfs/lazyfs/config/default.toml
+COPY ./config.toml /lazyfs/lazyfs/config/config.toml
+RUN chmod a+r /lazyfs/lazyfs/config/config.toml
+RUN chmod a+w /lazyfs/lazyfs/config/config.toml
 
 # run umbra on lazyfs by mounting lazyfs to /var/db
 COPY ./start.sh /start.sh
