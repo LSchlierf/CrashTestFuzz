@@ -4,10 +4,6 @@ from threading import Thread
 from utils import *
 from visualization import makeHTMLPage, makeTrace
 
-FILE = "umbra.db.wal"
-OP = "write"
-STEPS = 20
-
 SYNC_METHODS = [
     "none", "open_dsync", "open_sync", "fdatasync", "fsync"
 ]
@@ -16,7 +12,7 @@ test_db = {
     "name": shared.DB_TABLENAME,
     "schema": [("a", "int"), ("b", "int")]
 }
-    
+
 def copyLogs(seed, id, success):
     shutil.copy(os.path.abspath(f"SUT/{shared.SUT}/container/container-{id}/{shared.SUT}.log"), os.path.abspath(f"logs/{shared.SUT}/{seed}/{'s' if success else 'f'}-{id}-{shared.SUT}.log"))
     shutil.copy(os.path.abspath(f"SUT/{shared.SUT}/container/container-{id}/lazyfs.log"), os.path.abspath(f"logs/{shared.SUT}/{seed}/{'s' if success else 'f'}-{id}-lazyfs.log"))
@@ -25,26 +21,27 @@ def logAll(seed, id, metadata, log):
     if not os.path.exists("logs/" + shared.SUT + "/" + str(seed)):
         os.makedirs("logs/" + shared.SUT + "/" + str(seed), exist_ok=True)
     dumpIntoFile("logs/" + shared.SUT + "/" + str(seed) + "/" + ("s-" if metadata["successful"] else "f-") + id + ".json", json.dumps({"metadata": metadata, "log": log}))
+    copyLogs(seed, id, metadata["successful"])
     dumpIntoFile("logs/" + shared.SUT + "/" + str(seed) + "/" + ("s-" if metadata["successful"] else "f-") + id + ".html", makeHTMLPage(metadata, log, id))
     dumpIntoFile("logs/" + shared.SUT + "/" + str(seed) + "/" + ("s-" if metadata["successful"] else "f-") + id + ".trace", makeTrace(log, id))
-    copyLogs(seed, id, metadata["successful"])
 
 def runTestThreaded(batch, threadNumber, hurdle, seed, results, makeLog):
-    tld.number = threadNumber + 1
-    tld.batch = batch + 1
+    tls.number = threadNumber + 1
+    tls.batch = batch + 1
     debug("running test in thread", threadNumber + 1, "hurdle is", hurdle, level=2)
     try:
         if runTest(hurdle, seed, makeLog):
             results[batch * shared.CONCURRENT_TESTS + threadNumber] = True
         else:
             error("Test failed, seed", seed)
-    except:
-        error("Test failed, seed", seed)
-    
+    except Exception as e:
+        error("Test failed with exception", type(e), e, "seed", seed)
+
 def runTest(hurdle, seed, makeLog):
-    cmd = "\n".join(["[[injection]]", "type=\"clear\"", f"from=\"{FILE}\"", "timing=\"before\"", f"op=\"{OP}\"", f"occurrence={hurdle}", "crash=true"])
+    # hurdle = 20 # TODO
+    cmd = "\n".join(["\n[[injection]]", "type = \"clear-cache\"", f"from = \"/tmp/lazyfs.root/{shared.FILE}\"", f"timing = \"{shared.TIMING}\"", f"op = \"{shared.OP}\"", f"occurrence = {hurdle}", "crash = true"])
     id = prepHostEnvironment()
-    if makeLog:
+    if makeLog in ["all", "failed"]:
         (logPoll, logPipe) = openReader(id, "lazyfs")
     else:
         (logPoll, logPipe) = (None, None)
@@ -52,12 +49,18 @@ def runTest(hurdle, seed, makeLog):
     waitUntilAvailable(id, port, 90)
     sleep(8)
     create(shared.DB_TABLENAME, test_db["schema"], port)
-    (content, metadata, log) = runWorkload(port, seed, makeLog=makeLog, logPoll=logPoll, logPipe=logPipe)
+    (content, metadata, log) = runWorkload(port, seed, makeLog=(makeLog in ["all", "failed"]), logPoll=logPoll, logPipe=logPipe)
+    closeReader(logPipe)
     if metadata["successful"] and verify(shared.DB_TABLENAME, content, port):
         debug("Test ran without faults", level=2)
-        if makeLog:
+        if makeLog == "all":
             logAll(seed, id, metadata, log)
             debug("trace hash:", traceHash(log), level=2)
+    elif makeLog in ["all", "failed"]:
+        debug("Test ran with faults", level=1)
+        logAll(seed, id, metadata, log)
+        debug("trace hash:", traceHash(log), level=2)
+    debug("trace hash:", traceHash(log), level=1)
     stopSUT(id)
     try:
         stopContainer(id)
@@ -65,35 +68,32 @@ def runTest(hurdle, seed, makeLog):
         waitUntilAvailable(id, port, 90)
         sleep(8)
         if verify(shared.DB_TABLENAME, content, port):
-            debug("Correct db content after restart", level=2)
-            if makeLog:
-                logAll(seed, id, metadata, log)
-            cleanupContainer(id)
+            debug("Correct db content after restart", level=1)
+            # if makeLog == "all":
+                # logAll(seed, id, metadata, log)
+            # cleanupContainer(id)
             return True
         else:
             error("Incorrect db content after restart")
-            if makeLog:
+            if makeLog in ["all", "failed"]:
                 metadata["successful"] = False
-                logAll(seed, id, metadata, log)
-            cleanupContainer(id)
+                # logAll(seed, id, metadata, log)
+            # cleanupContainer(id)
             return False
     except:
         error("Container didn't restart")
-        if makeLog:
+        if makeLog in ["all", "failed"]:
             metadata["successful"] = False
-            logAll(seed, id, metadata, log)
-        cleanupContainer(id)
+            # logAll(seed, id, metadata, log)
+        # cleanupContainer(id)
         return False
-        
+
 def runSeedsThreaded(makeLog, start=0, end=10_000):
-    
 
     for seed in range(start, end):
-        os.system("clear")
-        
         debug("seed", seed, level=1)
 
-        results = [False for _ in range(STEPS)]
+        results = [False for _ in range(shared.STEPS)]
         
         # (actions, seed) = generateWorkload(1000, i)
 
@@ -108,8 +108,18 @@ def runSeedsThreaded(makeLog, start=0, end=10_000):
         sleep(5)
 
         create(shared.DB_TABLENAME, test_db["schema"], port=port)
+        
+        if makeLog in ["all", "failed"]:
+            (poll, pipe) = openReader(containerID, shared.SUT)
+        else:
+            (poll, pipe) = (None, None)
 
-        runWorkload(port, seed)
+        (content, metadata, log) = runWorkload(port, seed, makeLog in ["all", "failed"], poll, pipe)
+        closeReader(pipe)
+        
+        debug("trace hash:", traceHash(log), level=1)
+        if makeLog == "all" or (makeLog == "failed" and not metadata["successful"]):
+            logAll(seed, containerID, metadata, log)
 
         # commandIntoFifo(containerID, "lazyfs::unsynced-data-report")
 
@@ -123,28 +133,30 @@ def runSeedsThreaded(makeLog, start=0, end=10_000):
 
         stopContainer(containerID)
 
-        cleanupEnv(containerID)
+        # cleanupEnv(containerID)
 
         files = extractFiles(lazyfsLogs)
 
         # debug("Files:\n" + json.dumps(files, indent=2), level=3)
+        
+        # dumpIntoFile("files.json", json.dumps(files, indent=2), force=True)
 
         maxOps = 0
         for item in files:
-            if FILE in item and OP in files[item]:
-                maxOps = max(maxOps, files[item][OP])
+            if shared.FILE in item and shared.OP in files[item]:
+                maxOps = max(maxOps, files[item][shared.OP])
 
-        stepSize = int(maxOps / STEPS)
+        stepSize = int(maxOps / shared.STEPS)
 
         debug("max number of ops is", maxOps, "step size is", stepSize, level=3)
 
-        hurdles = [(i+1) * stepSize for i in range(STEPS)]
+        hurdles = [(i+1) * stepSize for i in range(shared.STEPS)]
 
         debug(len(hurdles), "hurdles:", hurdles, level=3)
 
         for (index, batch) in enumerate(itertools.batched(hurdles, shared.CONCURRENT_TESTS)):
             debug("running test batch", index + 1, level=1)
-            threads = [Thread(target=runTestThreaded, args=(index, number, hurdle, seed, results, makeLog == "all")) for (number, hurdle) in enumerate(batch)]
+            threads = [Thread(target=runTestThreaded, args=(index, number, hurdle, seed, results, makeLog)) for (number, hurdle) in enumerate(batch)]
             for (n, t) in enumerate(threads):
                 debug("starting thread", n + 1, level=2)
                 t.start()
@@ -153,23 +165,23 @@ def runSeedsThreaded(makeLog, start=0, end=10_000):
                 t.join()
             debug("finished test batch", index + 1, level=1)
 
-        cleanupEnvs()
+        # cleanupEnvs()
 
         if not False in results:
             debug("all tests ran without errors.", level=1)
         else:
             # debug(results, level=3)
             error("Errors in tests", [n for (n, s) in enumerate(results) if not s], "with hurdles", [hurdles[i] for (i, s) in enumerate(results) if not s])
-            if makeLog == "failed":
-                for h in [hurdles[i] for (i, s) in enumerate(results) if not s]:
-                    runTest(h, seed, True)
+            # if makeLog == "retry":
+                # for h in [hurdles[i] for (i, s) in enumerate(results) if not s]:
+                    # runTest(h, seed, "all")
             debug("seed was", seed, level=1)
 
         debug("all done.", level=1)
 
 def verifySeedThreaded(batch, threadNumber, seed, results, makeLog):
-    tld.number = threadNumber + 1
-    tld.batch = batch + 1
+    tls.number = threadNumber + 1
+    tls.batch = batch + 1
     debug("verifying seed", seed, level=1)
     try:
         if verifySeed(seed, makeLog):
@@ -179,7 +191,7 @@ def verifySeedThreaded(batch, threadNumber, seed, results, makeLog):
             error("Failure reported, seed", seed)
     except:
         error("Failure reported, seed", seed)
-        
+
 def verifySeed(seed, makeLog):
     containerID = prepHostEnvironment()
     if makeLog in ["all", "failed"]:
@@ -191,6 +203,7 @@ def verifySeed(seed, makeLog):
     sleep(3)
     create(test_db["name"], schema=test_db["schema"], port=port)
     (content, metadata, log) = runWorkload(port, seed, makeLog=(makeLog in ["all", "failed"]), logPoll=logPoll, logPipe=logPipe)
+    closeReader(logPipe)
     if makeLog == "all" or (makeLog == "failed" and not metadata["successful"]):
         logAll(seed, containerID, metadata, log)
         debug("trace hash:", traceHash(log), level=2)
@@ -231,6 +244,7 @@ def verifySeedsThreaded(makeLog, start=0, end=10_000):
                 sleep(3)
                 create(shared.DB_TABLENAME, test_db["schema"], port)
                 (content, metadata, log) = runWorkload(port, seed, makeLog=True, logPoll=logPoll, logPipe=logPipe)
+                closeReader(logPipe)
                 if metadata["successful"]:
                     debug("seed", seed, "completed successfully in second try", level=1)
                     failed.remove(seed)
@@ -244,4 +258,3 @@ def verifySeedsThreaded(makeLog, start=0, end=10_000):
     
     cleanupAll()
     debug("all done.", level=1)
-

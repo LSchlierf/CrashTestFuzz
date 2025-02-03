@@ -7,6 +7,15 @@ DEBUG_LEVEL = 0
 CONCURRENT_TESTS = 10
 DB_TABLENAME = "lazytest"
 
+#####################
+# CRASH INFORMATION #
+#####################
+
+FILE = "umbra.db.wal"
+OP = "fsync"
+TIMING = "after"
+STEPS = 20
+
 ##########################
 # WORKFLOW SPECIFICATION #
 ##########################
