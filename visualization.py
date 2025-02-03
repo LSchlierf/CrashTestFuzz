@@ -114,10 +114,10 @@ Probability for Update: {metadata["pUpdate"]}<br/>
 Probability for Delete: {metadata["pDelete"]}<br/>
 Probability for Serialization Failure: {metadata["pSerializationFailure"]}<br/><br/>
 Number of INSERTs: {metadata["numInsert"]}<br/>
-Number of UPDATEs: {metadata["numUpdate"]} | of which produced concurrency conflict: {metadata["numCCUpdate"]} ({round(metadata["numCCUpdate"] / metadata["numUpdate"] * 100, 1)} %)<br/>
-Number of DELETEs: {metadata["numDelete"]} | of which produced concurrency conflict: {metadata["numCCDelete"]} ({round(metadata["numCCDelete"] / metadata["numDelete"] * 100, 1)} %)<br/><br/>
-Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metadata["transactions"] * 100, 1)} %)<br/>
-Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1)} %)<br/><br/>
+Number of UPDATEs: {metadata["numUpdate"]} | of which produced concurrency conflict: {metadata["numCCUpdate"]} ({round(metadata["numCCUpdate"] / metadata["numUpdate"] * 100, 1) if metadata["numUpdate"] != 0 else "NaN"}%)<br/>
+Number of DELETEs: {metadata["numDelete"]} | of which produced concurrency conflict: {metadata["numCCDelete"]} ({round(metadata["numCCDelete"] / metadata["numDelete"] * 100, 1) if metadata["numDelete"] != 0 else "NaN"}%)<br/><br/>
+Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "NaN"}%)<br/>
+Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "NaN"}%)<br/>
 Transaction trace was {"successful" if metadata["successful"] else "not successful"}<br/><br/>
 <details><summary>Initial lazyfs log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details><br/>
 Trace hash: {traceHash(log)}
@@ -173,9 +173,9 @@ def singleLine(batch, metadata, openConns):
         if event["type"] == "commit" and i >= min(openConns + [event["transaction"]]):
             line += """<div class="commitLine"></div>"""
         line += "</td>"
-        
+    
     # current statement
-        
+    
     if event["type"] == "open":
         line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} open">BEGIN<br/>Transaction {event["transaction"]}<br/>{event["numStatements"]} statements{"<br/>Failure" if status["result"] == "failure" else ""}</div></td>"""
     elif event["type"] == "insert":
@@ -188,7 +188,7 @@ def singleLine(batch, metadata, openConns):
         line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} commit">Transaction {event["transaction"]}<br/>COMMIT{"<br/>Failure" if status["result"] == "failure" else ""}</div></td>"""
     elif event["type"] == "rollback":
         line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} rollback">Transaction {event["transaction"]}<br/>ROLLBACK{"<br/>Failure" if status["result"] == "failure" else ""}</div></td>"""
-        
+    
     # open transaction lines
     
     for i in range(event["transaction"] + 1, metadata["transactions"]):
@@ -198,7 +198,7 @@ def singleLine(batch, metadata, openConns):
         if event["type"] == "commit" and i >= min(openConns + [event["transaction"]]):
             line += """<div class="commitLine"></div>"""
         line += "</td>"
-        
+    
     # lazyfs log
     
     line += """<td class="farRight">"""
@@ -227,7 +227,7 @@ def makeTrace(log, containerId):
         else:
             (e,) = b
             s = {"result": "failure"}
-            
+        
         if e["type"] == "open":
             openConns += 1
             events.append({"name":"thread_name", "ph": "M", "tid": e["transaction"], "args": {"name": "Transaction"}})
