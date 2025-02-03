@@ -1,7 +1,7 @@
 import itertools
 import json
 from shared import SUT
-from utils import traceHash, debug
+from utils import debug, getTimeStamp, traceHash
 
 def makeHTMLPage(metadata, log, containerId):
     debug("generating HTML report for id", containerId, level=2)
@@ -101,6 +101,7 @@ details > summary {{
 }}
 </style></head><body><div id="metadata">
 <b>Transaction log for {containerId}</b><br/>
+Generated {getTimeStamp()}<br/><br/>
 System under test (SUT): {SUT}<br/>
 Seed: {str(metadata["seed"])} {"(given)" if metadata["seedGiven"] else "(generated)"}<br/>
 Transactions: {metadata["transactions"]}<br/>

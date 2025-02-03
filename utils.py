@@ -1,13 +1,11 @@
 import datetime
 from hashlib import md5
-import itertools
 import json
 import os
 import psycopg2
 import random
 import select
 import shared
-import shutil
 import subprocess
 from threading import local
 import time
@@ -238,7 +236,6 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                     debug("concurrency conflict, need to rollback", level=4)
                     currConn["c"].rollback()
                     currConn["statements"] = []
-                    # currConn["localContent"] = currConn          
                     currConn["localContent"] = dbContent.copy()
                     lockedItems -= currConn["lockedVals"]
                     currConn["lockedVals"] = set()
@@ -305,7 +302,6 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                     debug("concurrency conflict, need to rollback", level=4)
                     currConn["c"].rollback()
                     currConn["statements"] = []
-                    # currConn["localContent"] = currConn          
                     currConn["localContent"] = dbContent.copy()
                     lockedItems -= currConn["lockedVals"]
                     currConn["lockedVals"] = set()

@@ -1,5 +1,7 @@
+import itertools
 import json
 import shared
+import shutil
 from threading import Thread
 from utils import *
 from visualization import makeHTMLPage, makeTrace
