@@ -8,6 +8,9 @@ def makeHTMLPage(metadata, log, containerId):
     
     # header, styling and metadata
     
+    successfulText = "<span style=\"color: green\">successful</span>"
+    unsuccessfulText = "<span style=\"color: red\">not successful</span>"
+    
     page = f"""<!DOCTYPE html><html><head><title>{containerId} | Transaction log</title><style>
 table, td {{
     border: 1px solid lightgray;
@@ -102,6 +105,7 @@ details > summary {{
 </style></head><body><div id="metadata">
 <b>Transaction log for {containerId}</b><br/>
 Generated {getTimeStamp()}<br/><br/>
+<b>Workload information</b><br/>
 System under test (SUT): {SUT}<br/>
 Seed: {str(metadata["seed"])} {"(given)" if metadata["seedGiven"] else "(generated)"}<br/>
 Transactions: {metadata["transactions"]}<br/>
@@ -114,14 +118,15 @@ Probability for Insert: {metadata["pInsert"]}<br/>
 Probability for Update: {metadata["pUpdate"]}<br/>
 Probability for Delete: {metadata["pDelete"]}<br/>
 Probability for Serialization Failure: {metadata["pSerializationFailure"]}<br/><br/>
+<b>Trace information</b><br/>
 Number of INSERTs: {metadata["numInsert"]}<br/>
-Number of UPDATEs: {metadata["numUpdate"]} | of which produced concurrency conflict: {metadata["numCCUpdate"]} ({round(metadata["numCCUpdate"] / metadata["numUpdate"] * 100, 1) if metadata["numUpdate"] != 0 else "NaN"}%)<br/>
-Number of DELETEs: {metadata["numDelete"]} | of which produced concurrency conflict: {metadata["numCCDelete"]} ({round(metadata["numCCDelete"] / metadata["numDelete"] * 100, 1) if metadata["numDelete"] != 0 else "NaN"}%)<br/><br/>
-Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "NaN"}%)<br/>
-Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "NaN"}%)<br/>
-Transaction trace was {"successful" if metadata["successful"] else "not successful"}<br/><br/>
-<details><summary>Initial lazyfs log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details><br/>
-Trace hash: {traceHash(log)}
+Number of UPDATEs: {metadata["numUpdate"]} | of which produced concurrency conflict: {metadata["numCCUpdate"]} ({round(metadata["numCCUpdate"] / metadata["numUpdate"] * 100, 1) if metadata["numUpdate"] != 0 else "0"}%) (Target: {round(metadata["pSerializationFailure"] * 100, 1)}%)<br/>
+Number of DELETEs: {metadata["numDelete"]} | of which produced concurrency conflict: {metadata["numCCDelete"]} ({round(metadata["numCCDelete"] / metadata["numDelete"] * 100, 1) if metadata["numDelete"] != 0 else "0"}%) (Target: {round(metadata["pSerializationFailure"] * 100, 1)}%)<br/>
+Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%)<br/>
+Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%)<br/>
+Trace hash: <b>{traceHash(log)}</b><br/>
+Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/><br/>{testMetadata(metadata)}
+<details><summary>Initial lazyfs log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details>
 </div><table><thead><tr><td></td>"""
     
     # table header
@@ -214,6 +219,28 @@ def singleLine(batch, metadata, openConns):
     line += "</td>"
     
     return line
+
+def testMetadata(metadata):
+    if not "testMetadata" in metadata:
+        return ""
+    
+    d = metadata["testMetadata"]
+    
+    result = d["result"]
+    
+    if d["result"] == "correct-content":
+        result = """<span style="color: green">correct content after restart</span>"""
+    elif d["result"] == "incorrect-content":
+        result = """<span style="color: red">incorrect content after restart</span>"""
+    elif d["result"] == "no-restart":
+        result = """<span style="color: orange">container didn't restart</span>"""
+    
+    return f"""<b>Test information</b><br/>
+Target file: {d["targetFile"]}<br/>
+Timing: {d["timing"]}<br/>
+Operation: {d["operation"]}<br/>
+Occurrence: {d["hurdle"]}<br/>
+Result: {result}<br/><br/>"""
 
 def makeTrace(log, containerId):
     debug("generating TRACE report for id", containerId, level=2)

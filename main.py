@@ -79,8 +79,7 @@ def main():
             utils.cleanupAll()
         else:
             utils.info("Running seed", n.seed)
-            raise NotImplementedError
-            #TODO
+            benchmark.runSeedsThreaded(n.log, n.seed, n.seed + 1)        
     elif getattr(n, "from") != None:
         if getattr(n, "from") >= n.until:
             p.print_help()

@@ -412,26 +412,6 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
 # SQL CONTROL UTILS #
 #####################
 
-def waitUntilAvailable(id, port, timeout=0):
-    available = False
-    secs = 0
-    while not available:
-        if shared.SUT == "postgres":
-            logs = "\n".join(readLogs(id, "postgres")[-20:])
-            if "database system is ready to accept connections" in logs:
-                return
-        else:
-            try:
-                c = connect(port)
-                c.close()
-                return
-            except:
-                pass
-        if timeout != 0 and secs >= timeout:
-            error("Timeout while waiting for system start after", timeout, "seconds", kill=True)
-        secs += 1
-        sleep(1)
-
 def connect(port):
     if shared.SUT == "postgres":
         return psycopg2.connect(user="postgres", host="localhost", port=port)
@@ -623,6 +603,27 @@ def getPort(containerID):
                 exit(1)
             tries += 1
             time.sleep(0.5)
+
+def waitUntilAvailable(id, port, timeout=0):
+    secs = 0
+    while True:
+        if shared.SUT == "postgres":
+            logs = "\n".join(readLogs(id, "postgres")[-20:])
+            if "database system is ready to accept connections" in logs:
+                sleep(3)
+                return
+        else:
+            try:
+                c = connect(port)
+                c.close()
+                sleep(3)
+                return
+            except:
+                pass
+        if timeout != 0 and secs >= timeout:
+            error("Timeout while waiting for system start after", timeout, "seconds", kill=True)
+        secs += 1
+        sleep(1)
 
 ######################
 # FILE CONTROL UTILS #

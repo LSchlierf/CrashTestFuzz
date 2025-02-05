@@ -6,6 +6,7 @@ SUT = "umbra"
 DEBUG_LEVEL = 0
 CONCURRENT_TESTS = 10
 DB_TABLENAME = "lazytest"
+TEST_RUN = "trial"
 
 #####################
 # CRASH INFORMATION #
