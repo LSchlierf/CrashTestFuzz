@@ -45,9 +45,10 @@ ARG WAL_SYNC_METHOD
 ENV HOST_GID=${HOST_GID}
 ENV HOST_UID=${HOST_UID}
 ENV WAL_SYNC_METHOD=${WAL_SYNC_METHOD}
-ENV POSTGRES_PASSWORD=postgres
+# ENV POSTGRES_PASSWORD=postgres
 ENV POSTGRES_HOST_AUTH_METHOD=trust
-ENV POSTGRES_INITDB_ARGS="--set fsync=off --auth=trust"
+# ENV POSTGRES_INITDB_ARGS="--set fsync=off --auth=trust"
+ENV POSTGRES_INITDB_ARGS="--auth=trust"
 
 RUN groupadd --gid $HOST_GID local
 RUN useradd --uid $HOST_UID --gid $HOST_GID local

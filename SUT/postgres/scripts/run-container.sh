@@ -20,4 +20,6 @@ docker run -dit \
     -v ./../container/container-$CONTAINER_ID/lazyfs.log:/tmp/lazyfs.log \
     -v ./../container/container-$CONTAINER_ID/postgres.log:/tmp/postgres.log \
     --env CRASHCMD="${CRASHCMD}" \
+    --env POSTGRES_INITDB_ARGS="--auth=trust" \
+    --env POSTGRES_HOST_AUTH_METHOD=trust \
     lazypostgres
