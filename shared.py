@@ -2,11 +2,17 @@
 # GENERAL TEST INFORMATION #
 ############################
 
+SYNC_METHODS = [
+    "none", "open_dsync", "open_sync", "fdatasync", "fsync"
+]
+
 SUT = "umbra"
 DEBUG_LEVEL = 0
 CONCURRENT_TESTS = 10
 DB_TABLENAME = "lazytest"
 TEST_RUN = "trial"
+CHECKPOINT = False
+SYNC_METHOD = SYNC_METHODS[4]
 
 #####################
 # CRASH INFORMATION #

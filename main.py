@@ -11,7 +11,7 @@ def main():
     
     p.add_argument("-v", "--verbose", action="count", help=f"Increases the verbosity level (max 4, default {shared.DEBUG_LEVEL})")
     
-    p.add_argument("-r", "--seed", "--randseed", help="Seed for the transaction trace, if unspecified will generate random seed", type=int)
+    p.add_argument("-r", "--seed", "--randseed", help="Seed(s) for the transaction trace, can be passed multiple times", action="append", type=int)
     p.add_argument("-f", "--from", help="Starting seed for the transaction traces (inclusive)", type=int)
     p.add_argument("-u", "--until", help="End seed for the transaction traces (exclusive, default 10_000)", type=int)
     
@@ -24,6 +24,8 @@ def main():
     p.add_argument("-w", "--walfile") # TODO: automatic selection for each sut
     p.add_argument("-t", "--timing")
     p.add_argument("-o", "--operation")
+    p.add_argument("-m", "--sync-method", choices=shared.SYNC_METHODS)
+    p.add_argument("-k", "--checkpoint", action="store_const", const=True, default=None)
     p.add_argument("--no-threads", action="store_const", const=True, default=None, help="If specified, disables concurrent tests.")
     
     p.add_argument("--num-transactions", type=int)
@@ -50,8 +52,6 @@ def main():
         else:
             utils.error("Invalid config file", kill=True)
     
-    # TODO: set default values here
-    
     if n.until == None:
         n.until = 10_000
     if n.verbose == None:
@@ -70,16 +70,11 @@ def main():
     
     if n.seed != None:
         if n.verify:
-            utils.info("Verifying seed", n.seed)
-            benchmark.buildSUTImage()
-            s = benchmark.verifySeed(n.seed, n.log)
-            if not s and n.log == "retry":
-                utils.info("Transaction trace failed, running again to generate log")
-                benchmark.verifySeed(n.seed, "all")
-            utils.cleanupAll()
+            utils.info(f"Verifying seed{'s' if len(n.seed) > 1 else ''}", *n.seed)
+            benchmark.verifySeedsThreaded(n.log, seeds=n.seed)
         else:
-            utils.info("Running seed", n.seed)
-            benchmark.runSeedsThreaded(n.log, n.seed, n.seed + 1)        
+            utils.info(f"Running seed{'s' if len(n.seed) > 1 else ''}", *n.seed)
+            benchmark.runSeedsThreaded(n.log, seeds=n.seed)
     elif getattr(n, "from") != None:
         if getattr(n, "from") >= n.until:
             p.print_help()
@@ -90,14 +85,14 @@ def main():
                 raise NotImplementedError
                 #TODO
             else:
-                benchmark.verifySeedsThreaded(n.log, getattr(n, "from"), n.until)
+                benchmark.verifySeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
         else:
             utils.info("Running seeds", getattr(n, "from"), "through", n.until - 1)
             if n.no_threads:
                 raise NotImplementedError
                 #TODO
             else:
-                benchmark.runSeedsThreaded(n.log, getattr(n, "from"), n.until)
+                benchmark.runSeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
     else:
         if n.verify:
             utils.info("Verifying random seed")
@@ -118,6 +113,8 @@ def setConfigFileValues(n, data):
 def setSharedValues(n):
     if n.sut is not None:
         shared.SUT = n.sut
+    if n.sync_method is not None:
+        shared.SYNC_METHOD = n.sync_method
     if n.verbose != 0:
         shared.DEBUG_LEVEL = n.verbose
     if n.concurrent is not None:
@@ -131,6 +128,8 @@ def setSharedValues(n):
         shared.TIMING = n.timing
     if n.steps is not None:
         shared.STEPS = n.steps
+    if n.checkpoint is not None:
+        shared.CHECKPOINT = n.checkpoint
     
     if n.num_transactions is not None:
         shared.NUM_TRANSACTIONS = n.num_transactions

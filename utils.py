@@ -21,7 +21,7 @@ def getThreadId():
     return ""
 
 def getTimeStamp():
-    return datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    return datetime.datetime.now().strftime("[%Y-%m-%d@%H:%M:%S]")
 
 def error(*msg, kill=False):
     print("\033[31m[ ERROR ]\033[0m \033[32m" + getTimeStamp() + "\033[0m" + getThreadId(), *msg, flush=True)
@@ -39,7 +39,7 @@ def info(*msg):
 # WORKLOAD UTILS #
 ##################
 
-def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
+def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, verification=False):
     """runs a workload on a given postgres port
     
     Arguments:
@@ -79,18 +79,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
     (sMu, sVar) = shared.STATEMENT_SIZE
     (tMu, tVar) = shared.TRANSACTION_SIZE
     metadata = {
-        "transactions": remainingTransactions,
         "seed": seed,
         "seedGiven": not seedMissing,
-        "concurrentConnections": { "avg": ccMu, "var": ccVar },
-        "transactionSize": { "avg": tMu, "var": tVar },
-        "statementSize": { "avg": sMu, "var": sVar },
-        "pCommit": shared.P_COMMIT,
-        "pRollback": round(1 - shared.P_COMMIT, 5),
-        "pInsert": shared.P_INSERT,
-        "pUpdate": shared.P_UPDATE,
-        "pDelete": round(1 - shared.P_INSERT - shared.P_UPDATE, 5),
-        "pSerializationFailure": shared.P_SERIALIZATION_FAILURE,
         "successful": False,
         "numInsert": 0,
         "numUpdate": 0,
@@ -98,7 +88,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
         "numCommit": 0,
         "numRollback": 0,
         "numCCUpdate": 0,
-        "numCCDelete": 0
+        "numCCDelete": 0,
+        **getMetadata()
     }
     cid = 0
     aid = 0
@@ -181,7 +172,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                     insert(currConn["c"], values)
                     clientInsert((currConn["localContent"], values))
                 except Exception as e:
-                    error(type(e), "exception occurred", type(e), e)
+                    if verification:
+                        error(type(e), "exception occurred", e)
                     return (dbContent, metadata, log)
                 
             elif stmtTypeP < shared.P_INSERT + shared.P_UPDATE:
@@ -202,7 +194,7 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                     debug("expecting serialization failure", level=4)
                 else:
                     valsToEdit = [v for v in currConn["localContent"] if not v in lockedItems][-count:]
-                        
+                
                 
                 debug("update", count, "on transaction", currConn["id"], aid, valsToEdit, level=4)
                 
@@ -214,7 +206,7 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                         "count": count,
                         "values": valsToEdit.copy()
                     })
-                    
+                
                 fun = clientUpdate
                 args = (valsToEdit.copy(), aid)
                 
@@ -222,7 +214,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                     
                     update(currConn["c"], valsToEdit, aid)
                     if expectCC:
-                        error("Expected concurrency conflict")
+                        if verification:
+                            error("Expected concurrency conflict")
                         return (dbContent, metadata, log)
                     clientUpdate((currConn["localContent"], (valsToEdit, aid)))
                     currConn["lockedVals"] |= set(valsToEdit)
@@ -231,7 +224,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                 except (psycopg2.errors.SerializationFailure, psycopg2.errors.LockNotAvailable):
                     
                     if not expectCC:
-                        error("Didn't expect concurrency conflict")
+                        if verification:
+                            error("Didn't expect concurrency conflict")
                         return (dbContent, metadata, log)
                     debug("concurrency conflict, need to rollback", level=4)
                     currConn["c"].rollback()
@@ -248,7 +242,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                     continue
                 
                 except Exception as e:
-                    error(type(e), "exception occurred", e)
+                    if verification:
+                        error(type(e), "exception occurred", e)
                     return (dbContent, metadata, log)
                 
             else:
@@ -288,7 +283,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                     
                     delete(currConn["c"], valsToRm)
                     if expectCC:
-                        error("Expected concurrency conflict")
+                        if verification:
+                            error("Expected concurrency conflict")
                         return (dbContent, metadata, log)
                     clientDelete((currConn["localContent"], valsToRm))
                     currConn["lockedVals"] |= set(valsToRm)
@@ -297,7 +293,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                 except (psycopg2.errors.SerializationFailure, psycopg2.errors.LockNotAvailable):
                     
                     if not expectCC:
-                        error("Didn't expect concurrency conflict")
+                        if verification:
+                            error("Didn't expect concurrency conflict")
                         return (dbContent, metadata, log)
                     debug("concurrency conflict, need to rollback", level=4)
                     currConn["c"].rollback()
@@ -314,7 +311,8 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                     continue
                 
                 except Exception as e:
-                    error(type(e), "exception occurred", e)
+                    if verification:
+                        error(type(e), "exception occurred", e)
                     return (dbContent, metadata, log)
             
             aid = aid + 1
@@ -340,7 +338,7 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                 ######################
                 # COMMIT TRANSACTION #
                 ######################
-            
+
                 debug("commit transaction", transaction["id"], level=4)
                 metadata["numCommit"] += 1
                 
@@ -351,29 +349,36 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                         "type": "commit",
                         "transaction": transaction["id"]
                     })
+                    
+                newContent = dbContent.copy()
+                for (f, args) in transaction["statements"]:
+                    f((newContent, args))
                 
                 try:
                     transaction["c"].commit()
                     transaction["c"].close()
-                except:
+                except Exception as e:
+                    if verification:
+                        error(type(e), "exception occurred", e)
+                    metadata["altContent"] = newContent
                     return (dbContent, metadata, log)
+                dbContent = newContent
                 for (f, args) in transaction["statements"]:
-                    f((dbContent, args))
                     for c in openConns:
                         if len(c["statements"]) == 0: # TODO: COMMIT ONLY INSERTS ON UNTOUCHED CONNS -> BEGIN; CORRECT?
                             f((c["localContent"], args))
             
             else:
-            
+                
                 ########################
                 # ROLLBACK TRANSACTION #
                 ########################
-            
+
                 debug("rollback transaction", transaction["id"], level=4)
                 metadata["numRollback"] += 1
                 
                 lockedItems -= transaction["lockedVals"]
-            
+
                 if makeLog:
                     log.append({
                         "type": "rollback",
@@ -383,13 +388,17 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
                 try:
                     transaction["c"].rollback()
                     transaction["c"].close()
-                except:
+                except Exception as e:
+                    if verification:
+                        error(type(e), "exception occurred", e)
                     return (dbContent, metadata, log)
             
             debug(dbContent, level=4)
             try:
                 if not verify(shared.DB_TABLENAME, dbContent, port):
                     return (dbContent, metadata, log)
+                if shared.CHECKPOINT:
+                    commandIntoFifo(id, "lazyfs::cache-checkpoint")
             except:
                 return (dbContent, metadata, log)
         
@@ -407,6 +416,23 @@ def runWorkload(port, seed=None, makeLog=False, logPoll=None, logPipe=None):
 
     metadata["successful"] = True
     return (dbContent, metadata, log)
+
+def getMetadata():
+    (ccMu, ccVar) = shared.CONCURRENT_TRANSACTIONS
+    (sMu, sVar) = shared.STATEMENT_SIZE
+    (tMu, tVar) = shared.TRANSACTION_SIZE
+    return {
+        "transactions": shared.NUM_TRANSACTIONS,
+        "concurrentConnections": { "avg": ccMu, "var": ccVar },
+        "transactionSize": { "avg": tMu, "var": tVar },
+        "statementSize": { "avg": sMu, "var": sVar },
+        "pCommit": shared.P_COMMIT,
+        "pRollback": round(1 - shared.P_COMMIT, 5),
+        "pInsert": shared.P_INSERT,
+        "pUpdate": shared.P_UPDATE,
+        "pDelete": round(1 - shared.P_INSERT - shared.P_UPDATE, 5),
+        "pSerializationFailure": shared.P_SERIALIZATION_FAILURE
+    }
 
 #####################
 # SQL CONTROL UTILS #
@@ -474,21 +500,23 @@ def dump(name, port):
         cur.execute("SELECT * FROM " + name + ";")
         return cur.fetchall()
 
-def verify(name, content, port, kill=False):
+def verify(name, content, port, kill=False, supressErrors=False):
     debug("verifying", name, level=2)
     data = dump(name, port)
     content = set(str(c) for c in content)
     data = set(str(c) for c in data)
     cross = data ^ content
     if len(content) != len(data):
-        error("verify: length mismatch:", len(content), " (local) vs", len(data), "(db)", kill=False)
-        error("db has", str(data - content), kill=False)
-        error("local has", str(content - data), kill=kill)
+        if not supressErrors:
+            error("verify: length mismatch:", len(content), "(local) vs", len(data), "(db)", kill=False)
+            error("db has", str(data - content), kill=False)
+            error("local has", str(content - data), kill=kill)
         return False
     if len(cross) != 0:
-        error("verify: mismatch:", str(cross), kill=False)
-        error("db has", str(data - content), kill=False)
-        error("local has", str(content - data), kill=kill)
+        if not supressErrors:
+            error("verify: mismatch:", str(cross), kill=False)
+            error("db has", str(data - content), kill=False)
+            error("local has", str(content - data), kill=kill)
         return False
     debug("\033[1mdone\033[0m verifying", level=2)
     return True
@@ -502,8 +530,8 @@ def buildSUTImage(wal_sync_method=None):
     r = subprocess.run(["bash", "./build-image.sh", ("" if wal_sync_method is None else wal_sync_method)], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if r.returncode != 0:
         error("building SUT failed with code", r.returncode)
-        error(r.stdout)
-        error(r.stderr, kill=True)
+        error(r.stdout.decode())
+        error(r.stderr.decode(), kill=True)
     debug("\033[1mdone\033[0m building", level=2)
 
 def prepHostEnvironment(containerID=None):
@@ -514,8 +542,8 @@ def prepHostEnvironment(containerID=None):
     r = subprocess.run(["bash", "./prep-env.sh", containerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if r.returncode != 0:
         error("preparing host environment failed with code", r.returncode)
-        error(r.stdout)
-        error(r.stderr, kill=True)
+        error(r.stdout.decode())
+        error(r.stderr.decode(), kill=True)
     debug("\033[1mdone\033[0m preparing env", level=2)
     return containerID
 
@@ -524,30 +552,30 @@ def runContainer(containerID, port=0, crashcmd=""):
     r = subprocess.run(["bash", "./run-container.sh", containerID, str(port), crashcmd], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if r.returncode != 0:
         error("running container failed with code", r.returncode)
-        error(r.stdout)
-        error(r.stderr, kill=True)
+        error(r.stdout.decode())
+        error(r.stderr.decode(), kill=True)
     if port == 0:
         debug("No port given", level=3)
         port = getPort(containerID)
     debug("\033[1mdone\033[0m running", level=2)
     return port
 
-def stopSUT(containerID):
+def stopSUT(containerID, supressErrors=False):
     debug("stopping SUT", containerID, level=2)
     r = subprocess.run(["bash", "./stop-sut.sh", containerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if r.returncode != 0:
+    if r.returncode != 0 and not supressErrors:
         error("stopping SUT failed with code", r.returncode)
-        error(r.stdout)
-        error(r.stderr, kill=True)
+        error(r.stdout.decode())
+        error(r.stderr.decode(), kill=True)
     debug("\033[1mdone\033[0m stopping SUT", level=2)
 
-def stopContainer(containerID):
+def stopContainer(containerID, supressErrors=False):
     debug("stopping container", containerID, level=2)
     r = subprocess.run(["bash", "./stop-container.sh", containerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if r.returncode != 0:
+    if r.returncode != 0 and not supressErrors:
         error("stopping container failed with code", r.returncode)
-        error(r.stdout)
-        error(r.stderr, kill=True)
+        error(r.stdout.decode())
+        error(r.stderr.decode())
     debug("\033[1mdone\033[0m stopping container", level=2)
 
 def cleanupEnv(containerID):
@@ -555,30 +583,30 @@ def cleanupEnv(containerID):
     r = subprocess.run(["bash", "./cleanup-env.sh", containerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if r.returncode != 0:
         error("cleaning up host environment failed with code", r.returncode)
-        error(r.stdout)
-        error(r.stderr, kill=True)
+        error(r.stdout.decode())
+        error(r.stderr.decode())
     debug("\033[1mdone\033[0m cleaning up env", level=2)
 
 def cleanupContainer(containerID):
-    stopContainer(containerID)
+    stopContainer(containerID, supressErrors=True)
     cleanupEnv(containerID)
 
-def cleanupEnvs():
+def cleanupEnvs(supressErrors=False):
     debug("cleaning up all envs", level=2)
     r = subprocess.run(["bash", "./cleanup-envs.sh"], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if r.returncode != 0:
+    if r.returncode != 0 and not supressErrors:
         error("cleaning up all envs failed with code", r.returncode)
-        error(r.stdout)
-        error(r.stderr, kill=True)
+        error(r.stdout.decode())
+        error(r.stderr.decode())
     debug("\033[1mdone\033[0m cleaning up", level=2)
 
-def cleanupAll():
+def cleanupAll(supressErrors=False):
     debug("cleaning up all", level=2)
     r = subprocess.run(["bash", "./cleanup-all.sh"], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if r.returncode != 0:
+    if r.returncode != 0 and not supressErrors:
         error("cleaning up all failed with code", r.returncode)
-        error(r.stdout)
-        error(r.stderr, kill=True)
+        error(r.stdout.decode())
+        error(r.stderr.decode())
     debug("\033[1mdone\033[0m cleaning up", level=2)
 
 def getPort(containerID):
@@ -604,24 +632,25 @@ def getPort(containerID):
             tries += 1
             time.sleep(0.5)
 
-def waitUntilAvailable(id, port, timeout=0):
+def waitUntilAvailable(id, port, timeout=0, kill=False):
     secs = 0
     while True:
         if shared.SUT == "postgres":
             logs = "\n".join(readLogs(id, "postgres")[-20:])
             if "database system is ready to accept connections" in logs:
                 sleep(3)
-                return
+                return True
         else:
             try:
                 c = connect(port)
                 c.close()
                 sleep(3)
-                return
+                return True
             except:
                 pass
         if timeout != 0 and secs >= timeout:
-            error("Timeout while waiting for system start after", timeout, "seconds", kill=True)
+            error("Timeout while waiting for system start after", timeout, "seconds", kill=kill)
+            return False
         secs += 1
         sleep(1)
 
@@ -631,8 +660,9 @@ def waitUntilAvailable(id, port, timeout=0):
 
 def commandIntoFifo(containerID, cmd):
     debug("writing into fifo for container", containerID, cmd, level=2)
-    with open(os.sep.join(["SUT", shared.SUT, "container", "container-" + containerID, "faults.fifo"]), "w") as fifo:
-        fifo.write(cmd + "\n")
+    fifo = os.open(os.sep.join(["SUT", shared.SUT, "container", "container-" + containerID, "faults.fifo"]), os.O_WRONLY | os.O_NONBLOCK)
+    os.write(fifo, (cmd + "\n").encode())
+    os.close(fifo)
     debug("\033[1mdone\033[0m writing", level=2)
 
 def readLogs(containerID, name):
