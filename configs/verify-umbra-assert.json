@@ -1,0 +1,17 @@
+{
+  "num_transactions": 100,
+  "concurrent_transactions_avg": 10.0,
+  "concurrent_transactions_var": 2.0,
+  "transaction_size_avg": 10.0,
+  "transaction_size_var": 2.0,
+  "statement_size_avg": 15.0,
+  "statement_size_var": 5.0,
+  "p_commit": 0.8,
+  "p_insert": 0.7,
+  "p_update": 0.2,
+  "p_serialization_failure": 0.1,
+  "verify": true,
+  "sut": "umbra-assert",
+  "concurrent": 16,
+  "log": "failed"
+}
