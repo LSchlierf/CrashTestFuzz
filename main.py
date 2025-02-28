@@ -26,7 +26,6 @@ def main():
     p.add_argument("-o", "--operation")
     p.add_argument("-m", "--sync-method", choices=shared.SYNC_METHODS)
     p.add_argument("-k", "--checkpoint", action="store_const", const=True, default=None)
-    p.add_argument("--no-threads", action="store_const", const=True, default=None, help="If specified, disables concurrent tests.")
     
     p.add_argument("--num-transactions", type=int)
     p.add_argument("--concurrent-transactions-avg", type=float)
@@ -81,18 +80,10 @@ def main():
             utils.error("end of seed range must be at least 1 above start", kill=True)
         if n.verify:
             utils.info("Verifying seeds", getattr(n, "from"), "through", n.until - 1)
-            if n.no_threads:
-                raise NotImplementedError
-                #TODO
-            else:
-                benchmark.verifySeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
+            benchmark.verifySeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
         else:
             utils.info("Running seeds", getattr(n, "from"), "through", n.until - 1)
-            if n.no_threads:
-                raise NotImplementedError
-                #TODO
-            else:
-                benchmark.runSeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
+            benchmark.runSeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
     else:
         if n.verify:
             utils.info("Verifying random seed")
