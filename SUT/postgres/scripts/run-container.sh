@@ -5,6 +5,9 @@ CRASHCMD=$3
 PORT=${PORT:="0"}
 CRASHCMD=${CRASHCMD:=""}
 
+# added to prevent premature return of waitUntilAvailable fn
+echo -n "" > ./../container/container-$CONTAINER_ID/postgres.log
+
 docker run -dit \
     --ulimit nofile=1048576:1048576 \
     --ulimit memlock=8388608:8388608 \
