@@ -11,19 +11,22 @@ def main():
         print(f"Usage: {sys.argv[0]} [./path/to/dump.json]")
         exit(1)
     
-    if not os.path.exists(sys.argv[1]):
-        print(f"Invalid path: {sys.argv[1]}")
-        exit(1)
-        
     shared.DEBUG_LEVEL = 2
+    for path in sys.argv[1:]:
+        export(path)
+    utils.info("done.")
     
+def export(path):
+    if not os.path.exists(path):
+        utils.error(f"Invalid path: {path}")
+        return
+        
     try:
-        with open(sys.argv[1], "r") as f:
+        with open(path, "r") as f:
             data = json.load(f)
         
-        utils.dumpIntoFile(sys.argv[1].split(".json")[0] + ".html", visualization.makeHTMLPage(data["metadata"], data["log"], sys.argv[1].split(".json")[0].split("/")[-1][2:]), force=True)
-        utils.dumpIntoFile(sys.argv[1].split(".json")[0] + ".trace", visualization.makeTrace(data["log"], sys.argv[1].split(".json")[0].split("/")[-1][2:]), force=True)
-        print("done.")
+        utils.dumpIntoFile(path.split(".json")[0] + ".html", visualization.makeHTMLPage(data["metadata"], data["log"], path.split(".json")[0].split("/")[-1][2:]), force=True)
+        utils.dumpIntoFile(path.split(".json")[0] + ".trace", visualization.makeTrace(data["log"], path.split(".json")[0].split("/")[-1][2:]), force=True)
         
     except Exception as e:
         print(f"Error reading file: {e}")
