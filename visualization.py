@@ -122,8 +122,8 @@ Probability for Serialization Failure: {metadata["pSerializationFailure"]}<br/><
 Number of INSERTs: {metadata["numInsert"]}<br/>
 Number of UPDATEs: {metadata["numUpdate"]} | of which produced concurrency conflict: {metadata["numCCUpdate"]} ({round(metadata["numCCUpdate"] / metadata["numUpdate"] * 100, 1) if metadata["numUpdate"] != 0 else "0"}%) (Target: {round(metadata["pSerializationFailure"] * 100, 1)}%)<br/>
 Number of DELETEs: {metadata["numDelete"]} | of which produced concurrency conflict: {metadata["numCCDelete"]} ({round(metadata["numCCDelete"] / metadata["numDelete"] * 100, 1) if metadata["numDelete"] != 0 else "0"}%) (Target: {round(metadata["pSerializationFailure"] * 100, 1)}%)<br/>
-Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%)<br/>
-Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%)<br/>
+Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%) (Target: {round(metadata["pCommit"] * 100, 1)}%)<br/>
+Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%) (Target: {round(metadata["pRollback"] * 100, 1)}%) (Not including concurrency conflicts)<br/>
 Trace hash: <b>{traceHash(log)}</b><br/>
 Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/><br/>{testMetadata(metadata)}
 <details><summary>Initial lazyfs log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details>
@@ -228,12 +228,15 @@ def testMetadata(metadata):
     
     result = d["result"]
     
-    if d["result"] == "correct-content":
-        result = """<span style="color: green">correct content after restart</span>"""
-    elif d["result"] == "incorrect-content":
-        result = """<span style="color: red">incorrect content after restart</span>"""
+    if d["result"].startswith("correct-content"):
+        result = f"""<span style="color: green">correct content after restart{d["result"][15:]}</span>"""
+    elif d["result"].startswith("incorrect-content"):
+        result = f"""<span style="color: red">incorrect content after restart{d["result"][17:]}</span>"""
     elif d["result"] == "no-restart":
         result = """<span style="color: orange">container didn't restart</span>"""
+    elif d["result"] == "error":
+        result = """<span style="color: orange">error</span>"""
+        
     
     return f"""<b>Test information</b><br/>
 Target file: {d["targetFile"]}<br/>
