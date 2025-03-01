@@ -83,10 +83,14 @@ def runTest(hurdle, seed, makeLog):
     (content, metadata, log) = runWorkload(port, id, seed, True, logPoll=logPoll, logPipe=logPipe)
     closeReader(logPipe)
     initialSuccess = False
-    if metadata["successful"] and verify(shared.DB_TABLENAME, content, port):
-        initialSuccess = True
-        info("Initial trace ran without faults")
-        stopSUT(id)
+    if metadata["successful"]:
+        try:
+            if verify(shared.DB_TABLENAME, content, port):
+                initialSuccess = True
+                info("Initial trace ran without faults")
+            stopSUT(id)
+        except:
+            pass
     else:
         info("Initial trace ran with faults")
     testMetadata["traceHash"] = traceHash(log)
