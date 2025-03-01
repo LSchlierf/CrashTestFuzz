@@ -98,6 +98,7 @@ def runTest(hurdle, seed, makeLog):
         port = runContainer(id)
         if not waitUntilAvailable(id, port, 600):
             info("Container didn't restart")
+            del metadata["oldSnapshots"]
             testMetadata["result"] = "no-restart"
             metadata["testMetadata"] = testMetadata
             if makeLog in ["all", "failed"]:
@@ -110,6 +111,7 @@ def runTest(hurdle, seed, makeLog):
                 debug("Correct db content after restart, lost commit", level=1)
             else:
                 debug("Correct db content after restart", level=1)
+            del metadata["oldSnapshots"]
             testMetadata["result"] = ("correct-content" + ("; lost-commit" if "altContent" in metadata else ""))
             metadata["testMetadata"] = testMetadata
             if makeLog == "all":
@@ -126,9 +128,17 @@ def runTest(hurdle, seed, makeLog):
                     stopContainer(id, supressErrors=True)
                     logAll(seed, id, metadata, log, 1)
                 cleanupContainer(id)
+                del metadata["oldSnapshots"]
                 return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
-            info("Incorrect db content after restart")
-            testMetadata["result"] = "incorrect-content"
+            for i in range(len(metadata["oldSnapshots"])):
+                if verify(shared.DB_TABLENAME, metadata["oldSnapshots"][-(i + 1)], port, supressErrors=True):
+                    lostCommits = i + 1
+                    info(lostCommits, "lost commit(s)")
+                    break
+            testMetadata["result"] = "incorrect-content" + ("; lost-commits: " + str(lostCommits) if lostCommits else "")
+            actual = dump(shared.DB_TABLENAME, port)
+            mismatch = list(set(content) ^ set(actual))
+            testMetadata["details"] = {"expected": content, "actual": actual, "mismatch": mismatch}
             metadata["testMetadata"] = testMetadata
             if makeLog in ["all", "failed"]:
                 stopContainer(id, supressErrors=True)
@@ -136,8 +146,9 @@ def runTest(hurdle, seed, makeLog):
             cleanupContainer(id)
             return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
     except Exception as e:
-        error(type(e), "exception occured:", e, traceback.format_exc())
+        error(type(e), "exception occured:", e)
         testMetadata["result"] = "error"
+        testMetadata["details"] = traceback.format_exc()
         metadata["testMetadata"] = testMetadata
         if makeLog in ["all", "failed"]:
             stopContainer(id, supressErrors=True)

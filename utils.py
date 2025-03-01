@@ -89,7 +89,8 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
         "numRollback": 0,
         "numCCUpdate": 0,
         "numCCDelete": 0,
-        **getMetadata()
+        **getMetadata(),
+        "oldSnapshots": []
     }
     cid = 0
     aid = 0
@@ -362,6 +363,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                         error(type(e), "exception occurred", e)
                     metadata["altContent"] = newContent
                     return (dbContent, metadata, log)
+                metadata["oldSnapshots"].append(dbContent)
                 dbContent = newContent
                 for (f, args) in transaction["statements"]:
                     for c in openConns:
@@ -393,9 +395,9 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                         error(type(e), "exception occurred", e)
                     return (dbContent, metadata, log)
             
-            debug(dbContent, level=4)
+            # debug(dbContent, level=4)
             try:
-                if not verify(shared.DB_TABLENAME, dbContent, port):
+                if verification and not verify(shared.DB_TABLENAME, dbContent, port):
                     return (dbContent, metadata, log)
                 if shared.CHECKPOINT:
                     commandIntoFifo(id, "lazyfs::cache-checkpoint")
