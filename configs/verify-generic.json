@@ -11,7 +11,6 @@
   "p_update": 0.2,
   "p_serialization_failure": 0.1,
   "verify": true,
-  "sut": "postgres",
   "concurrent": 16,
   "log": "failed"
 }
