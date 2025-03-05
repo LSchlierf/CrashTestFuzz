@@ -462,7 +462,7 @@ def lazyfsTimestamp(line):
     return datetime.datetime(year, month, day, hour, minute, second, millisecond * 1000, datetime.UTC).timestamp()
 
 def mergeLogs(metadata, log, containerID):
-    lazyfslogs = readLogs(containerID, "lazyfs")
+    lazyfslogs = [line for line in readLogs(containerID, "lazyfs") if not "lfs_getattr(" in line]
     sutlogs = readLogs(containerID, shared.SUT)
     
     if (len(log) % 2) == 1:
@@ -470,10 +470,7 @@ def mergeLogs(metadata, log, containerID):
     
     targets = [metadata["initialLog"]] + [b[1]["logs"] for b in itertools.batched(log, 2)]
     timestamps = [b[0]["timestamp"] for b in itertools.batched(log, 2)] + [sys.float_info.max]
-    
-    info(len(targets), len(timestamps))
-    info(containerID)
-    
+        
     for (target, timestamp) in zip(targets, timestamps, strict=True):
         
         while (len(sutlogs) > 0 and SUTTimestamp(sutlogs[0]) < timestamp) or (len(lazyfslogs) > 0 and lazyfsTimestamp(lazyfslogs[0]) < timestamp):
