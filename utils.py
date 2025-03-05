@@ -1,12 +1,13 @@
 import datetime
 from hashlib import md5
+import itertools
 import json
 import os
 import psycopg2
 import random
-import select
 import shared
 import subprocess
+import sys
 from threading import local
 import time
 import uuid
@@ -20,33 +21,35 @@ def getThreadId():
         return f" \033[34m[Thread {tls.batch}|{tls.number:02d}]\033[0m"
     return ""
 
-def getTimeStamp():
+def getFormattedTimestamp():
     return datetime.datetime.now().strftime("[%Y-%m-%d@%H:%M:%S]")
 
+def getTimestamp():
+    return datetime.datetime.now().timestamp()
+
 def error(*msg, kill=False):
-    print("\033[31m[ ERROR ]\033[0m \033[32m" + getTimeStamp() + "\033[0m" + getThreadId(), *msg, flush=True)
+    print("\033[31m[ ERROR ]\033[0m \033[32m" + getFormattedTimestamp() + "\033[0m" + getThreadId(), *msg, flush=True)
     if(kill):
         exit(1)
 
 def debug(*msg, multiline=False, level=3):
     if level <= shared.DEBUG_LEVEL:
-        print("\033[33m[DEBUG-" + str(level) + "]\033[0m \033[32m" + getTimeStamp() + "\033[0m" + getThreadId() + ("\n" if multiline else ""), *msg, flush=True)
+        print("\033[33m[DEBUG-" + str(level) + "]\033[0m \033[32m" + getFormattedTimestamp() + "\033[0m" + getThreadId() + ("\n" if multiline else ""), *msg, flush=True)
 
 def info(*msg):
-    print("\033[36m[ INFO  ]\033[0m \033[32m" + getTimeStamp() + "\033[0m" + getThreadId(), *msg, flush=True)
+    print("\033[36m[ INFO  ]\033[0m \033[32m" + getFormattedTimestamp() + "\033[0m" + getThreadId(), *msg, flush=True)
 
 ##################
 # WORKLOAD UTILS #
 ##################
 
-def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, verification=False):
+def runWorkload(port, id, seed=None, makeLog=False, verification=False):
     """runs a workload on a given postgres port
     
     Arguments:
     port                        (required) - port the db is listening on
     seed                        (optional) - seed for the RNG. if missing, on will be generated from teh system time.
     makeLog                     (optional) - if set to True, all opens, statements, rollbacks and commits will be logged and returned (default: False)
-    logPoll, logPipe            (optional) - poll and pipe as returned by openReader(). Required iff makeLog == True
     
     All other parameters are passed via the shared module
     """
@@ -90,12 +93,11 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
         "numCCUpdate": 0,
         "numCCDelete": 0,
         **getMetadata(),
-        "oldSnapshots": []
+        "oldSnapshots": [],
+        "initialLog": []
     }
     cid = 0
     aid = 0
-    if makeLog:
-        metadata["initialLog"] = [l for l in pollReader(logPoll, logPipe) if "getattr" not in l]
     while len(finishedTransactions) > 0 or len(openConns) > 0 or remainingTransactions > 0:
         
         # debug("currently locked:", lockedItems, level=4)
@@ -115,6 +117,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
             if makeLog:
                 log.append({
                     "type": "open",
+                    "timestamp": getTimestamp(),
                     "transaction": cid,
                     "numStatements": numStatements
                 })
@@ -160,6 +163,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                 if makeLog:
                     log.append({
                         "type": "insert",
+                        "timestamp": getTimestamp(),
                         "transaction": currConn["id"],
                         "statement": aid,
                         "count": count,
@@ -202,6 +206,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                 if makeLog:
                     log.append({
                         "type": "update",
+                        "timestamp": getTimestamp(),
                         "transaction": currConn["id"],
                         "statement": aid,
                         "count": count,
@@ -237,8 +242,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                     aid += 1
                     
                     if makeLog:
-                        lazyLog = [l for l in pollReader(logPoll, logPipe) if "getattr" not in l]
-                        log.append({"result": "rollback", "logs": lazyLog})
+                        log.append({"result": "rollback", "logs": []})
                     
                     continue
                 
@@ -271,6 +275,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                 if makeLog:
                     log.append({
                         "type": "delete",
+                        "timestamp": getTimestamp(),
                         "transaction": currConn["id"],
                         "statement": aid,
                         "count": count,
@@ -306,8 +311,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                     aid += 1
                     
                     if makeLog:
-                        lazyLog = [l for l in pollReader(logPoll, logPipe) if "getattr" not in l]
-                        log.append({"result": "rollback", "logs": lazyLog})
+                        log.append({"result": "rollback", "logs": []})
                     
                     continue
                 
@@ -348,6 +352,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                 if makeLog:
                     log.append({
                         "type": "commit",
+                        "timestamp": getTimestamp(),
                         "transaction": transaction["id"]
                     })
                     
@@ -363,7 +368,8 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                         error(type(e), "exception occurred", e)
                     metadata["altContent"] = newContent
                     return (dbContent, metadata, log)
-                metadata["oldSnapshots"].append(dbContent)
+                if not verification:
+                    metadata["oldSnapshots"].append(dbContent)
                 dbContent = newContent
                 for (f, args) in transaction["statements"]:
                     for c in openConns:
@@ -384,6 +390,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
                 if makeLog:
                     log.append({
                         "type": "rollback",
+                        "timestamp": getTimestamp(),
                         "transaction": transaction["id"]
                     })
                 
@@ -409,8 +416,7 @@ def runWorkload(port, id, seed=None, makeLog=False, logPoll=None, logPipe=None, 
         #########################
         
         if makeLog:
-            lazyLog = [l for l in pollReader(logPoll, logPipe) if "getattr" not in l]
-            log.append({"result": "success", "logs": lazyLog})
+            log.append({"result": "success", "logs": []})
 
     ###############################
     # ALL TRANSACTIONS SUCCESSFUL #
@@ -435,6 +441,46 @@ def getMetadata():
         "pDelete": round(1 - shared.P_INSERT - shared.P_UPDATE, 5),
         "pSerializationFailure": shared.P_SERIALIZATION_FAILURE
     }
+
+def SUTTimestamp(line):
+    if shared.SUT == "postgres":
+        if len(line) < 24 or line[4] != '-' or line[7] != '-' or line[10] != ' ' or line[13] != ':' or line[16] != ':' or line[19] != '.':
+            return 0
+        (year, month, day, hour, minute, second, millisecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:23]))
+        return datetime.datetime(year, month, day, hour, minute, second, millisecond * 1000, datetime.UTC).timestamp()
+    
+    if shared.SUT == "cedardb":
+        if len(line) < 24 or line[4] != '-' or line[7] != '-' or line[10] != ' ' or line[13] != ':' or line[16] != ':' or line[19] != '.':
+            return 0
+        (year, month, day, hour, minute, second, microsecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:26]))                
+        return datetime.datetime(year, month, day, hour, minute, second, microsecond, datetime.UTC).timestamp()
+    
+    return 0
+
+def lazyfsTimestamp(line):
+    (year, month, day, hour, minute, second, millisecond) = (int(line[1:5]), int(line[6:8]), int(line[9:11]), int(line[12:14]), int(line[15:17]), int(line[18:20]), int(line[21:24]))
+    return datetime.datetime(year, month, day, hour, minute, second, millisecond * 1000, datetime.UTC).timestamp()
+
+def mergeLogs(metadata, log, containerID):
+    lazyfslogs = readLogs(containerID, "lazyfs")
+    sutlogs = readLogs(containerID, shared.SUT)
+    
+    if (len(log) % 2) == 1:
+        log.append({"result": "failure", "logs": []})
+    
+    targets = [metadata["initialLog"]] + [b[1]["logs"] for b in itertools.batched(log, 2)]
+    timestamps = [b[0]["timestamp"] for b in itertools.batched(log, 2)] + [sys.float_info.max]
+    
+    info(len(targets), len(timestamps))
+    info(containerID)
+    
+    for (target, timestamp) in zip(targets, timestamps, strict=True):
+        
+        while (len(sutlogs) > 0 and SUTTimestamp(sutlogs[0]) < timestamp) or (len(lazyfslogs) > 0 and lazyfsTimestamp(lazyfslogs[0]) < timestamp):
+            if len(sutlogs) == 0 or (len(lazyfslogs) > 0 and lazyfsTimestamp(lazyfslogs[0]) < SUTTimestamp(sutlogs[0])):
+                target.append(f"[lazyfs] {lazyfslogs.pop(0)}")
+            else:
+                target.append(f"[{shared.SUT}] {sutlogs.pop(0)}")
 
 #####################
 # SQL CONTROL UTILS #
@@ -673,27 +719,6 @@ def readLogs(containerID, name):
         logs = log.readlines()
     debug("\033[1mdone\033[0m reading logs", level=2)
     return logs
-
-def openReader(containerID, name):
-    debug("opening reader on logs", name, "of container", containerID, level=2)
-    f = subprocess.Popen(["tail", "-f", "/".join(["SUT", shared.SUT, "container", "container-" + containerID, name + ".log"])], stdout=subprocess.PIPE)
-    p = select.poll()
-    p.register(f.stdout)
-    debug("\033[1mdone\033[0m opening reader", level=2)
-    return (p, f)
-
-def pollReader(poll, pipe):
-    debug("polling log", level=2)
-    l = []
-    while poll.poll(1):
-        l.append(pipe.stdout.readline().decode().strip())
-    debug("got", len(l), "lines")
-    debug("\033[1mdone\033[0m polling log", level=2)
-    return l
-
-def closeReader(pipe):
-    if pipe is not None:
-        pipe.kill()
 
 def dumpIntoFile(path, content, force=False):
     if force:

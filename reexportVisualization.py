@@ -25,8 +25,8 @@ def export(path):
         with open(path, "r") as f:
             data = json.load(f)
         
-        utils.dumpIntoFile(path.split(".json")[0] + ".html", visualization.makeHTMLPage(data["metadata"], data["log"], path.split(".json")[0].split("/")[-1][2:]), force=True)
-        utils.dumpIntoFile(path.split(".json")[0] + ".trace", visualization.makeTrace(data["log"], path.split(".json")[0].split("/")[-1][2:]), force=True)
+        utils.dumpIntoFile(path.split(".json")[0] + ".html", visualization.makeHTMLPage(data["metadata"], data["log"], path.split(".json")[0].split("/")[-1]), force=True)
+        utils.dumpIntoFile(path.split(".json")[0] + ".trace", visualization.makeTrace(data["log"], path.split(".json")[0].split("/")[-1]), force=True)
         
     except Exception as e:
         print(f"Error reading file: {e}")

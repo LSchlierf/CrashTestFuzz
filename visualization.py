@@ -1,7 +1,7 @@
 import itertools
 import json
 from shared import SUT
-from utils import debug, getTimeStamp, traceHash
+from utils import debug, getFormattedTimestamp, traceHash
 
 def makeHTMLPage(metadata, log, containerId):
     debug("generating HTML report for id", containerId, level=2)
@@ -48,6 +48,7 @@ td {{
     top: 0;
     bottom: 0;
     left: 50%;
+    z-index: -1;
 }}
 .commitLine {{
     height: 3px;
@@ -76,25 +77,36 @@ td {{
     background: lightgray;
     text-align: left;
     padding: 0 10px;
+    max-width: 30vw;
 }}
 details {{
     font-family: monospace;
+    overflow: scroll;
 }}
 details > summary {{
     font-family: initial;
 }}
 .event {{
+    background: white;
     border-radius: 10px;
     border: 2px solid black;
 }}
 .open {{
     border: 3px solid gray;
 }}
+.open + .openConnLine {{
+    height: 50%;
+    top: 50%;
+}}
 .commit {{
     border: 3px solid green;
 }}
 .rollback {{
     border: 3px solid red;
+}}
+.commit + .openConnLine, .rollback + .openConnLine {{
+    height: 50%;
+    bottom: 50%;
 }}
 .failure {{
     background: lightcoral;
@@ -104,7 +116,7 @@ details > summary {{
 }}
 </style></head><body><div id="metadata">
 <b>Transaction log for {containerId}</b><br/>
-Generated {getTimeStamp()}<br/><br/>
+Generated {getFormattedTimestamp()}<br/><br/>
 <b>Workload information</b><br/>
 System under test (SUT): {SUT}<br/>
 Seed: {str(metadata["seed"])} {"(given)" if metadata["seedGiven"] else "(generated)"}<br/>
@@ -126,7 +138,7 @@ Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metad
 Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%) (Target: {round(metadata["pRollback"] * 100, 1)}%) (Not including concurrency conflicts)<br/>
 Trace hash: <b>{traceHash(log)}</b><br/>
 Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/><br/>{testMetadata(metadata)}
-<details><summary>Initial lazyfs log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details>
+<details><summary>Initial log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details>
 </div><table><thead><tr><td></td>"""
     
     # table header
@@ -134,7 +146,7 @@ Transaction trace was {successfulText if metadata["successful"] else unsuccessfu
     for i in range(metadata["transactions"]):
         page += f"<td>{i}</td>"
     
-    page += """<td class="farRight">lazyfs logs</td></tr></thead><tbody>"""
+    page += """<td class="farRight">logs</td></tr></thead><tbody>"""
     
     # table rows
     
@@ -183,17 +195,17 @@ def singleLine(batch, metadata, openConns):
     # current statement
     
     if event["type"] == "open":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} open">BEGIN<br/>Transaction {event["transaction"]}<br/>{event["numStatements"]} statements{"<br/>Failure" if status["result"] == "failure" else ""}</div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} open">BEGIN<br/>Transaction {event["transaction"]}<br/>{event["numStatements"]} statements{"<br/>Failure" if status["result"] == "failure" else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "insert":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} insert">INSERT {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}</div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} insert">INSERT {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "update":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} update">UPDATE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} update">UPDATE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "delete":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} delete">DELETE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} delete">DELETE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "commit":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} commit">Transaction {event["transaction"]}<br/>COMMIT{"<br/>Failure" if status["result"] == "failure" else ""}</div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} commit">Transaction {event["transaction"]}<br/>COMMIT{"<br/>Failure" if status["result"] == "failure" else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "rollback":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} rollback">Transaction {event["transaction"]}<br/>ROLLBACK{"<br/>Failure" if status["result"] == "failure" else ""}</div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} rollback">Transaction {event["transaction"]}<br/>ROLLBACK{"<br/>Failure" if status["result"] == "failure" else ""}</div><div class="openConnLine"></div></td>"""
     
     # open transaction lines
     
@@ -205,7 +217,7 @@ def singleLine(batch, metadata, openConns):
             line += """<div class="commitLine"></div>"""
         line += "</td>"
     
-    # lazyfs log
+    # logs
     
     line += """<td class="farRight">"""
     
