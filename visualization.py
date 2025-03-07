@@ -1,6 +1,6 @@
 import itertools
 import json
-from shared import SUT
+import shared
 from utils import debug, getFormattedTimestamp, traceHash
 
 def makeHTMLPage(metadata, log, containerId):
@@ -118,7 +118,7 @@ details > summary {{
 <b>Transaction log for {containerId}</b><br/>
 Generated {getFormattedTimestamp()}<br/><br/>
 <b>Workload information</b><br/>
-System under test (SUT): {SUT}<br/>
+System under test (SUT): {shared.SUT}<br/>
 Seed: {str(metadata["seed"])} {"(given)" if metadata["seedGiven"] else "(generated)"}<br/>
 Transactions: {metadata["transactions"]}<br/>
 Concurrent connections: {metadata["concurrentConnections"]["avg"]} (avg) | {metadata["concurrentConnections"]["var"]} (var)<br/>

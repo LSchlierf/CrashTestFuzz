@@ -25,6 +25,15 @@ def export(path):
         with open(path, "r") as f:
             data = json.load(f)
         
+        if "logs/" in path:
+            shared.SUT = path.split("logs/")[1].split("/")[0]
+        else:
+            sut = input(f"Enter SUT for {path}: ")
+            if len(sut) > 0:
+                shared.SUT = sut
+            else:
+                shared.SUT = "unknown"
+        
         utils.dumpIntoFile(path.split(".json")[0] + ".html", visualization.makeHTMLPage(data["metadata"], data["log"], path.split(".json")[0].split("/")[-1]), force=True)
         utils.dumpIntoFile(path.split(".json")[0] + ".trace", visualization.makeTrace(data["log"], path.split(".json")[0].split("/")[-1]), force=True)
         
