@@ -5,6 +5,7 @@ import json
 import os
 import psycopg2
 import random
+import requests
 import shared
 import subprocess
 import sys
@@ -50,6 +51,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
     port                        (required) - port the db is listening on
     seed                        (optional) - seed for the RNG. if missing, on will be generated from teh system time.
     makeLog                     (optional) - if set to True, all opens, statements, rollbacks and commits will be logged and returned (default: False)
+    verification                (optional) - if set to True, will verify db content after each commit and save snapshots of db (default: False)
     
     All other parameters are passed via the shared module
     """
@@ -124,7 +126,6 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
             
             try:
                 newConn = connect(port)
-                newConn.set_session(isolation_level="REPEATABLE READ")
                 # with newConn.cursor() as c:
                     # c.execute("BEGIN;")
             except:
@@ -455,9 +456,17 @@ def SUTTimestamp(line):
         (year, month, day, hour, minute, second, microsecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:26]))                
         return datetime.datetime(year, month, day, hour, minute, second, microsecond, datetime.UTC).timestamp()
     
+    if shared.SUT == "duckdb":
+        if len(line) < 24 or line[0] != '[' or line[5] != '-' or line[8] != '-' or line[11] != '@' or line[14] != ':' or line[17] != ':' or line[20] != '.':
+            return 0
+        (year, month, day, hour, minute, second, microsecond) = (int(line[1:5]), int(line[6:8]), int(line[9:11]), int(line[12:14]), int(line[15:17]), int(line[18:20]), int(line[21:27]))
+        return datetime.datetime(year, month, day, hour, minute, second, microsecond, datetime.UTC).timestamp()
+    
     return 0
 
 def lazyfsTimestamp(line):
+    if len(line) < 24:
+        return 0
     (year, month, day, hour, minute, second, millisecond) = (int(line[1:5]), int(line[6:8]), int(line[9:11]), int(line[12:14]), int(line[15:17]), int(line[18:20]), int(line[21:24]))
     return datetime.datetime(year, month, day, hour, minute, second, millisecond * 1000, datetime.UTC).timestamp()
 
@@ -470,7 +479,7 @@ def mergeLogs(metadata, log, containerID):
     
     targets = [metadata["initialLog"]] + [b[1]["logs"] for b in itertools.batched(log, 2)]
     timestamps = [b[0]["timestamp"] for b in itertools.batched(log, 2)] + [sys.float_info.max]
-        
+    
     for (target, timestamp) in zip(targets, timestamps, strict=True):
         
         while (len(sutlogs) > 0 and SUTTimestamp(sutlogs[0]) < timestamp) or (len(lazyfslogs) > 0 and lazyfsTimestamp(lazyfslogs[0]) < timestamp):
@@ -483,18 +492,58 @@ def mergeLogs(metadata, log, containerID):
 # SQL CONTROL UTILS #
 #####################
 
+class duckdbConnection:
+    def __init__(self, port):
+        self._port = port
+        self._connID = requests.post(f"http://127.0.0.1:{self._port}/open").json()["connID"]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+    def cursor(self):
+        return duckdbCursor(self)
+
+    def commit(self):
+        requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "COMMIT;"})
+
+    def rollback(self):
+        requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "ROLLBACK;"})
+
+    def close(self):
+        requests.post(f"http://127.0.0.1:{self._port}/close", json={"connID": self._connID})
+
+
+class duckdbCursor:
+    def __init__(self, connection):
+        self._conn = connection
+        self.rowcount = 0
+
+    def execute(self, stmt):
+        requests.post(f"http://127.0.0.1:{self._conn._port}/sql", json={"connID": self._conn._connID, "query": stmt})
+
+    def fetchall(self):
+        return [tuple(v) for v in requests.post(f"http://127.0.0.1:{self._conn._port}/fetchall", json={"connID": self._conn._connID}).json()["result"]]
+
 def connect(port):
-    if shared.SUT == "postgres":
-        return psycopg2.connect(user="postgres", host="localhost", port=port)
+    if shared.SUT == "duckdb":
+        conn = duckdbConnection(port)
+    elif shared.SUT == "postgres":
+        conn = psycopg2.connect(user="postgres", host="localhost", port=port)
+        conn.set_session(isolation_level="REPEATABLE READ")
     else:
-        return psycopg2.connect(database="postgres", user="postgres", password="postgres", host="localhost", port=port)
+        conn = psycopg2.connect(database="postgres", user="postgres", password="postgres", host="localhost", port=port)
+        conn.set_session(isolation_level="REPEATABLE READ")
+    return conn
 
 def create(name, schema, port):
     debug("creating db", level=2)
     with connect(port) as conn:
         cur = conn.cursor()
         cur.execute("DROP TABLE IF EXISTS " + name + ";")
-        cur.execute("CREATE TABLE " + name + "(" + ", ".join([s[0] + " " + s[1] for s in schema]) + ");")
+        cur.execute("CREATE TABLE " + name + " (" + ", ".join([s[0] + " " + s[1] for s in schema]) + ");")
         conn.commit()
     debug("\033[1mdone\033[0m creating db")
 
@@ -685,6 +734,13 @@ def waitUntilAvailable(id, port, timeout=0, kill=False):
             if "database system is ready to accept connections" in logs:
                 sleep(3)
                 return True
+        elif shared.SUT == "duckdb":
+            try:
+                if requests.get(f"http://127.0.0.1:{port}/ping").text == '"pong"':
+                    sleep(3)
+                    return True
+            except:
+                pass
         else:
             try:
                 c = connect(port)
@@ -737,12 +793,14 @@ def sleep(secs):
 
 def traceHash(log):
     newLog = []
-    # filter out lazyfs logs
+    # filter out logs, timestamps
     for item in log:
         if "result" in item:
             newLog.append({"result": item["result"]})
-        else:
-            newLog.append(item)
+        elif "type" in item:
+            newItem = {**item}
+            del newItem["timestamp"]
+            newLog.append(newItem)
     return md5(json.dumps(newLog).encode(encoding="utf-8")).hexdigest()
 
 def extractFiles(logs):
