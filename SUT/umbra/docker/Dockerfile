@@ -1,4 +1,4 @@
-FROM umbradb/umbra:latest
+FROM umbradb/umbra:25.01
 
 USER root
 
