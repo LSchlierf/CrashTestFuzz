@@ -9,3 +9,7 @@ logs
 *test.*
 *Test.*
 SUT/*/container
+
+# configs
+configs/trial*
+configs/demo*
