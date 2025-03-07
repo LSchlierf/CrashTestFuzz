@@ -106,6 +106,7 @@ def runTest(hurdle, seed, makeLog):
             metadata["testMetadata"] = testMetadata
             if makeLog in ["all", "failed"]:
                 stopContainer(id, supressErrors=True)
+                addRestartLog(metadata, id)
                 logAll(seed, id, metadata, log, 1)
             cleanupContainer(id)
             return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
@@ -119,6 +120,7 @@ def runTest(hurdle, seed, makeLog):
             metadata["testMetadata"] = testMetadata
             if makeLog == "all":
                 stopContainer(id, supressErrors=True)
+                addRestartLog(metadata, id)
                 logAll(seed, id, metadata, log, 1)
             cleanupContainer(id)
             return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
@@ -129,6 +131,7 @@ def runTest(hurdle, seed, makeLog):
                 metadata["testMetadata"] = testMetadata
                 if makeLog == "all":
                     stopContainer(id, supressErrors=True)
+                    addRestartLog(metadata, id)
                     logAll(seed, id, metadata, log, 1)
                 cleanupContainer(id)
                 del metadata["oldSnapshots"]
@@ -145,6 +148,7 @@ def runTest(hurdle, seed, makeLog):
             metadata["testMetadata"] = testMetadata
             if makeLog in ["all", "failed"]:
                 stopContainer(id, supressErrors=True)
+                addRestartLog(metadata, id)
                 logAll(seed, id, metadata, log, 1)
             cleanupContainer(id)
             return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
@@ -155,6 +159,7 @@ def runTest(hurdle, seed, makeLog):
         metadata["testMetadata"] = testMetadata
         if makeLog in ["all", "failed"]:
             stopContainer(id, supressErrors=True)
+            addRestartLog(metadata, id)
             logAll(seed, id, metadata, log, 1)
         cleanupContainer(id)
         return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)

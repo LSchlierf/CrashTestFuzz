@@ -488,6 +488,19 @@ def mergeLogs(metadata, log, containerID):
             else:
                 target.append(f"[{shared.SUT}] {sutlogs.pop(0)}")
 
+def addRestartLog(metadata, containerID):
+    lazyfslogs = [line for line in readLogs(containerID, "lazyfs") if not "lfs_getattr(" in line]
+    sutlogs = readLogs(containerID, shared.SUT)
+    
+    if not "restartLog" in metadata:
+        metadata["restartLog"] = []
+    
+    while len(lazyfslogs) > 0 or len(sutlogs) > 0:
+        if len(sutlogs) == 0 or (len(lazyfslogs) > 0 and lazyfsTimestamp(lazyfslogs[0]) < SUTTimestamp(sutlogs[0])):
+            metadata["restartLog"].append(f"[lazyfs] {lazyfslogs.pop(0)}")
+        else:
+            metadata["restartLog"].append(f"[{shared.SUT}] {sutlogs.pop(0)}")
+
 #####################
 # SQL CONTROL UTILS #
 #####################

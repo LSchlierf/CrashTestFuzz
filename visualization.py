@@ -139,6 +139,7 @@ Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] /
 Trace hash: <b>{traceHash(log)}</b><br/>
 Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/><br/>{testMetadata(metadata)}
 <details><summary>Initial log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details>
+{restartLog(metadata)}
 </div><table><thead><tr><td></td>"""
     
     # table header
@@ -256,6 +257,12 @@ Timing: {d["timing"]}<br/>
 Operation: {d["operation"]}<br/>
 Occurrence: {d["hurdle"]}<br/>
 Result: {result}<br/><br/>"""
+
+def restartLog(metadata):
+    if not "restartLog" in metadata or len(metadata["restartLog"]) == 0:
+        return ""
+    
+    return f"""<details><summary>Restart log ({len(metadata["restartLog"])} line{"" if len(metadata["restartLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["restartLog"])}</details>"""
 
 def makeTrace(log, containerId):
     debug("generating TRACE report for id", containerId, level=2)
