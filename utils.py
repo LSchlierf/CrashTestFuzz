@@ -505,7 +505,7 @@ def addRestartLog(metadata, containerID):
 # SQL CONTROL UTILS #
 #####################
 
-class duckdbConnection:
+class apiConnection:
     def __init__(self, port):
         self._port = port
         self._connID = requests.post(f"http://127.0.0.1:{self._port}/open").json()["connID"]
@@ -517,7 +517,7 @@ class duckdbConnection:
         self.close()
 
     def cursor(self):
-        return duckdbCursor(self)
+        return apiCursor(self)
 
     def commit(self):
         requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "COMMIT;"})
@@ -529,7 +529,7 @@ class duckdbConnection:
         requests.post(f"http://127.0.0.1:{self._port}/close", json={"connID": self._connID})
 
 
-class duckdbCursor:
+class apiCursor:
     def __init__(self, connection):
         self._conn = connection
         self.rowcount = 0
@@ -541,8 +541,8 @@ class duckdbCursor:
         return [tuple(v) for v in requests.post(f"http://127.0.0.1:{self._conn._port}/fetchall", json={"connID": self._conn._connID}).json()["result"]]
 
 def connect(port):
-    if shared.SUT == "duckdb":
-        conn = duckdbConnection(port)
+    if shared.SUT in ["duckdb", "sqlite"]:
+        conn = apiConnection(port)
     elif shared.SUT == "postgres":
         conn = psycopg2.connect(user="postgres", host="localhost", port=port)
         conn.set_session(isolation_level="REPEATABLE READ")
@@ -747,7 +747,7 @@ def waitUntilAvailable(id, port, timeout=0, kill=False):
             if "database system is ready to accept connections" in logs:
                 sleep(3)
                 return True
-        elif shared.SUT == "duckdb":
+        elif shared.SUT in ["duckdb", "sqlite"]:
             try:
                 if requests.get(f"http://127.0.0.1:{port}/ping").text == '"pong"':
                     sleep(3)
