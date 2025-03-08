@@ -456,7 +456,7 @@ def SUTTimestamp(line):
         (year, month, day, hour, minute, second, microsecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:26]))                
         return datetime.datetime(year, month, day, hour, minute, second, microsecond, datetime.UTC).timestamp()
     
-    if shared.SUT == "duckdb":
+    if shared.SUT in ["duckdb", "sqlite"]:
         if len(line) < 24 or line[0] != '[' or line[5] != '-' or line[8] != '-' or line[11] != '@' or line[14] != ':' or line[17] != ':' or line[20] != '.':
             return 0
         (year, month, day, hour, minute, second, microsecond) = (int(line[1:5]), int(line[6:8]), int(line[9:11]), int(line[12:14]), int(line[15:17]), int(line[18:20]), int(line[21:27]))
