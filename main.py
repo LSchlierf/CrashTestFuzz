@@ -148,10 +148,10 @@ def setSharedValues(n):
     shared.TRANSACTION_SIZE = (tsAvg, tsVar)
     
     (ssAvg, ssVar) = shared.STATEMENT_SIZE
-    if n.transaction_size_avg is not None:
-        ssAvg = n.transaction_size_avg
-    if n.transaction_size_var is not None:
-        ssVar = n.transaction_size_var
+    if n.statement_size_avg is not None:
+        ssAvg = n.statement_size_avg
+    if n.statement_size_var is not None:
+        ssVar = n.statement_size_var
     shared.STATEMENT_SIZE = (ssAvg, ssVar)
 
 if __name__ == "__main__":
