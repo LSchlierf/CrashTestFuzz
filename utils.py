@@ -190,16 +190,16 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 
                 stmtType = "update"
                 metadata["numUpdate"] += 1
-                expectCC = r.random() < shared.P_SERIALIZATION_FAILURE and len(set(currConn["localContent"]) & lockedItems) >= count
+                expectCC = r.random() < shared.P_SERIALIZATION_FAILURE and len(set(currConn["localContent"]) & (lockedItems - currConn["lockedVals"])) >= count
                 
-                debug(len(set(currConn["localContent"]) & lockedItems), level=4)
+                debug(len(set(currConn["localContent"]) & (lockedItems - currConn["lockedVals"])), level=4)
                 
                 if expectCC:
-                    valsToEdit = [v for v in currConn["localContent"] if v in lockedItems][-count:]
+                    valsToEdit = [v for v in currConn["localContent"] if v in (lockedItems - currConn["lockedVals"])][-count:]
                     metadata["numCCUpdate"] += 1
                     debug("expecting serialization failure", level=4)
                 else:
-                    valsToEdit = [v for v in currConn["localContent"] if not v in lockedItems][-count:]
+                    valsToEdit = [v for v in currConn["localContent"] if not v in (lockedItems - currConn["lockedVals"])][-count:]
                 
                 
                 debug("update", count, "on transaction", currConn["id"], aid, valsToEdit, level=4)
@@ -260,16 +260,16 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 
                 stmtType = "delete"
                 metadata["numDelete"] += 1
-                expectCC = r.random() < shared.P_SERIALIZATION_FAILURE and len(set(currConn["localContent"]) & lockedItems) >= count
+                expectCC = r.random() < shared.P_SERIALIZATION_FAILURE and len(set(currConn["localContent"]) & (lockedItems - currConn["lockedVals"])) >= count
                 
-                debug(len(set(currConn["localContent"]) & lockedItems), level=4)
+                debug(len(set(currConn["localContent"]) & (lockedItems - currConn["lockedVals"])), level=4)
                 
                 if expectCC:
-                    valsToRm = [v for v in currConn["localContent"] if v in lockedItems][-count:]
+                    valsToRm = [v for v in currConn["localContent"] if v in (lockedItems - currConn["lockedVals"])][-count:]
                     metadata["numCCDelete"] += 1
                     debug("expecting serialization failure", level=4)
                 else:
-                    valsToRm = [v for v in currConn["localContent"] if not v in lockedItems][-count:]
+                    valsToRm = [v for v in currConn["localContent"] if not v in (lockedItems - currConn["lockedVals"])][-count:]
                 
                 debug("delete", count, "on transaction", currConn["id"], valsToRm, level=4)
                 
