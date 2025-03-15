@@ -6,6 +6,15 @@ import os
 import shared
 import utils
 
+WAL_FILES = {
+    "umbra": "umbra.db.wal",
+    "umbra-assert": "umbra.db.wal",
+    "postgres": "pg_wal/000000010000000000000001",
+    "cedardb": "database/db.wal",
+    "duckdb": "duck.db.wal",
+    "sqlite": "sqlite.db-journal"
+}
+
 def main():
     p = argparse.ArgumentParser(prog="DBHWBench", formatter_class=argparse.RawTextHelpFormatter)
     
@@ -21,11 +30,11 @@ def main():
     
     p.add_argument("--verify", action="store_const", const=True, default=None, help="If specified, will verify the seed(s), running without injected hardware faults")
     p.add_argument("--sut", choices=os.listdir("SUT"), help="System Under Test")
-    p.add_argument("-w", "--walfile") # TODO: automatic selection for each sut
-    p.add_argument("-t", "--timing")
-    p.add_argument("-o", "--operation")
-    p.add_argument("-m", "--sync-method", choices=shared.SYNC_METHODS)
-    p.add_argument("-k", "--checkpoint", action="store_const", const=True, default=None)
+    p.add_argument("-w", "--walfile", help="The Write-ahead-log file to crash LazyFS by. Pass \"auto\" for automatic selection depenting on the SUT.")
+    p.add_argument("-t", "--timing", help="The LazyFS crash timing")
+    p.add_argument("-o", "--operation", help="The LazyFS operation to crash upon", choices=["create", "open", "read", "write", "fsync", "getattr"])
+    p.add_argument("-m", "--sync-method", help="The WAL sync method to pass to the SUT", choices=shared.SYNC_METHODS)
+    p.add_argument("-k", "--checkpoint", help="If set to true, will checkpoint LazyFS after every finished transaction", action="store_const", const=True, default=None)
     
     p.add_argument("--num-transactions", type=int)
     p.add_argument("--concurrent-transactions-avg", type=float)
@@ -39,7 +48,7 @@ def main():
     p.add_argument("--p-update", type=float)
     p.add_argument("--p-serialization-failure", type=float)
     
-    p.add_argument("-x", "--config", metavar="FILE.json", help="config file that holds parameters.\nCan be overridden by cmd line args.")
+    p.add_argument("-x", "--config", metavar="FILE.json", help="Config file that holds parameters.\nCan be overridden by cmd line args.")
     
     n = p.parse_args()
     
@@ -55,8 +64,8 @@ def main():
         n.until = 10_000
     if n.verbose == None:
         n.verbose = 0
-    
-    print(n)
+    if n.walfile == "auto":
+        n.walfile = WAL_FILES[n.sut]
     
     setSharedValues(n)
     
@@ -68,6 +77,7 @@ def main():
     assert shared.P_SERIALIZATION_FAILURE < 1 and shared.P_SERIALIZATION_FAILURE >= 0
     
     if n.seed != None:
+        print(n)
         if n.verify:
             utils.info(f"Verifying seed{'s' if len(n.seed) > 1 else ''}", *n.seed)
             benchmark.verifySeedsThreaded(n.log, seeds=n.seed)
@@ -75,6 +85,7 @@ def main():
             utils.info(f"Running seed{'s' if len(n.seed) > 1 else ''}", *n.seed)
             benchmark.runSeedsThreaded(n.log, seeds=n.seed)
     elif getattr(n, "from") != None:
+        print(n)
         if getattr(n, "from") >= n.until:
             p.print_help()
             utils.error("end of seed range must be at least 1 above start", kill=True)
@@ -85,14 +96,10 @@ def main():
             utils.info("Running seeds", getattr(n, "from"), "through", n.until - 1)
             benchmark.runSeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
     else:
-        if n.verify:
-            utils.info("Verifying random seed")
-            raise NotImplementedError
-            #TODO
-        else:
-            utils.info("Running random seed")
-            raise NotImplementedError
-            #TODO
+        p.print_usage()
+        print("Pass either a range of seeds using -f [--from] and -u [--until] or specify single seeds using -r [--randseed].")
+        print("Use -h for more details.")
+        exit(0)
             
     utils.info("All done.")
 
