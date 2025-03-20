@@ -37,8 +37,12 @@ def sql(payload: dict):
         log("error: no query")
         return {"status": "error", "msg": "no query"}
     log("running", query, "on conn", connID)
-    conns[connID].execute(query) # never do this, kids!
-    return {"status": "success"}
+    try:
+        conns[connID].execute(query) # never do this, kids!
+        return {"status": "success"}
+    except duckdb.TransactionException as e:
+        log(str(e))
+        return {"status": "concurrency conflict"}
 
 @app.post("/fetchall")
 def fetchall(payload: dict):

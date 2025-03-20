@@ -49,7 +49,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
     
     Arguments:
     port                        (required) - port the db is listening on
-    seed                        (optional) - seed for the RNG. if missing, on will be generated from teh system time.
+    seed                        (optional) - seed for the RNG. if missing, on will be generated from the system time.
     makeLog                     (optional) - if set to True, all opens, statements, rollbacks and commits will be logged and returned (default: False)
     verification                (optional) - if set to True, will verify db content after each commit and save snapshots of db (default: False)
     
@@ -102,8 +102,6 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
     aid = 0
     while len(finishedTransactions) > 0 or len(openConns) > 0 or remainingTransactions > 0:
         
-        # debug("currently locked:", lockedItems, level=4)
-        
         ccs = r.gauss(ccMu, ccVar)
         
         if (len(openConns) == 0 and len(finishedTransactions) == 0 or ccs > (len(openConns) + len(finishedTransactions)) and hash(ccs) % 2 == 0) and remainingTransactions > 0:
@@ -112,7 +110,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
             # BEGIN NEW TRANSACTION #
             #########################
             
-            numStatements = max(round(r.gauss(sMu, sVar)), 1) # at least 1 stmt per transaction
+            numStatements = max(round(r.gauss(tMu, tVar)), 1) # at least 1 stmt per transaction
             
             debug("New connection", cid, ",", numStatements, "statements, starting point is", dbContent, level=4)
             
@@ -126,9 +124,9 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
             
             try:
                 newConn = connect(port)
-                # with newConn.cursor() as c:
-                    # c.execute("BEGIN;")
-            except:
+            except Exception as e:
+                if makeLog:
+                    log.append({"result": "failure", "logs": [], "details": str(e)})
                 return (dbContent, metadata, log)
             
             openConns.append({"c": newConn, "id": cid, "numStatements": numStatements, "statements": [], "localContent": dbContent.copy(), "lockedVals": set()})
@@ -145,11 +143,11 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
             transactionIndex = r.randrange(len(openConns))
             currConn = openConns[transactionIndex]
             stmtTypeP = r.random()
-            count = max(1, round(r.gauss(tMu, tVar)))
+            count = max(1, round(r.gauss(sMu, sVar)))
             
             expectCC = False
             
-            if stmtTypeP < shared.P_INSERT or len(set(currConn["localContent"]) - lockedItems) < count:
+            if stmtTypeP < shared.P_INSERT or len(set(currConn["localContent"]) - (lockedItems - currConn["lockedVals"])) < count:
                 
                 ##########
                 # INSERT #
@@ -180,6 +178,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 except Exception as e:
                     if verification:
                         error(type(e), "exception occurred", e)
+                    if makeLog:
+                        log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
                 
             elif stmtTypeP < shared.P_INSERT + shared.P_UPDATE:
@@ -223,6 +223,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                     if expectCC:
                         if verification:
                             error("Expected concurrency conflict")
+                        if makeLog:
+                            log.append({"result": "failure", "logs": [], "details": "expected concurrency conflict"})
                         return (dbContent, metadata, log)
                     clientUpdate((currConn["localContent"], (valsToEdit, aid)))
                     currConn["lockedVals"] |= set(valsToEdit)
@@ -233,9 +235,13 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                     if not expectCC:
                         if verification:
                             error("Didn't expect concurrency conflict")
+                        if makeLog:
+                            log.append({"result": "failure", "logs": [], "details": "didn't expect concurrency conflict"})
                         return (dbContent, metadata, log)
                     debug("concurrency conflict, need to rollback", level=4)
                     currConn["c"].rollback()
+                    with currConn["c"].cursor() as c:
+                        c.execute(f"SELECT 0;") # used as BEGIN;
                     currConn["statements"] = []
                     currConn["localContent"] = dbContent.copy()
                     lockedItems -= currConn["lockedVals"]
@@ -250,6 +256,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 except Exception as e:
                     if verification:
                         error(type(e), "exception occurred", e)
+                    if makeLog:
+                        log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
                 
             else:
@@ -292,6 +300,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                     if expectCC:
                         if verification:
                             error("Expected concurrency conflict")
+                        if makeLog:
+                            log.append({"result": "failure", "logs": [], "details": "expected concurrency conflict"})
                         return (dbContent, metadata, log)
                     clientDelete((currConn["localContent"], valsToRm))
                     currConn["lockedVals"] |= set(valsToRm)
@@ -302,9 +312,13 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                     if not expectCC:
                         if verification:
                             error("Didn't expect concurrency conflict")
+                        if makeLog:
+                            log.append({"result": "failure", "logs": [], "details": "didn't expect concurrency conflict"})
                         return (dbContent, metadata, log)
                     debug("concurrency conflict, need to rollback", level=4)
                     currConn["c"].rollback()
+                    with currConn["c"].cursor() as c:
+                        c.execute(f"SELECT 0;") # used as BEGIN;
                     currConn["statements"] = []
                     currConn["localContent"] = dbContent.copy()
                     lockedItems -= currConn["lockedVals"]
@@ -319,6 +333,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 except Exception as e:
                     if verification:
                         error(type(e), "exception occurred", e)
+                    if makeLog:
+                        log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
             
             aid = aid + 1
@@ -368,14 +384,16 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                     if verification:
                         error(type(e), "exception occurred", e)
                     metadata["altContent"] = newContent
+                    if makeLog:
+                        log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
                 if not verification:
                     metadata["oldSnapshots"].append(dbContent)
                 dbContent = newContent
-                for (f, args) in transaction["statements"]:
-                    for c in openConns:
-                        if len(c["statements"]) == 0: # TODO: COMMIT ONLY INSERTS ON UNTOUCHED CONNS -> BEGIN; CORRECT?
-                            f((c["localContent"], args))
+                # for (f, args) in transaction["statements"]:
+                    # for c in openConns:
+                        # if len(c["statements"]) == 0: # TODO: COMMIT ONLY INSERTS ON UNTOUCHED CONNS -> BEGIN; CORRECT?
+                            # f((c["localContent"], args))
             
             else:
                 
@@ -401,15 +419,21 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 except Exception as e:
                     if verification:
                         error(type(e), "exception occurred", e)
+                    if makeLog:
+                        log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
             
             # debug(dbContent, level=4)
             try:
                 if verification and not verify(shared.DB_TABLENAME, dbContent, port):
+                    if makeLog:
+                        log.append({"result": "failure", "logs": [], "details": "verify mismatch"})
                     return (dbContent, metadata, log)
                 if shared.CHECKPOINT:
                     commandIntoFifo(id, "lazyfs::cache-checkpoint")
-            except:
+            except Exception as e:
+                if makeLog:
+                    log.append({"result": "failure", "logs": [], "details": str(e)})
                 return (dbContent, metadata, log)
         
         #########################
@@ -524,10 +548,10 @@ class apiConnection:
 
     def rollback(self):
         requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "ROLLBACK;"})
+        requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "BEGIN;"})
 
     def close(self):
         requests.post(f"http://127.0.0.1:{self._port}/close", json={"connID": self._connID})
-
 
 class apiCursor:
     def __init__(self, connection):
@@ -535,7 +559,10 @@ class apiCursor:
         self.rowcount = 0
 
     def execute(self, stmt):
-        requests.post(f"http://127.0.0.1:{self._conn._port}/sql", json={"connID": self._conn._connID, "query": stmt})
+        result = requests.post(f"http://127.0.0.1:{self._conn._port}/sql", json={"connID": self._conn._connID, "query": stmt}).json()["status"]
+        if "concurrency conflict" in result:
+            raise psycopg2.errors.SerializationFailure()
+        assert result == "success"
 
     def fetchall(self):
         return [tuple(v) for v in requests.post(f"http://127.0.0.1:{self._conn._port}/fetchall", json={"connID": self._conn._connID}).json()["result"]]
@@ -546,9 +573,12 @@ def connect(port):
     elif shared.SUT == "postgres":
         conn = psycopg2.connect(user="postgres", host="localhost", port=port)
         conn.set_session(isolation_level="REPEATABLE READ")
+        with conn.cursor() as c:
+            c.execute(f"SELECT 0;") # used as BEGIN;
     else:
         conn = psycopg2.connect(database="postgres", user="postgres", password="postgres", host="localhost", port=port)
-        conn.set_session(isolation_level="REPEATABLE READ")
+        with conn.cursor() as c:
+            c.execute(f"SELECT 0;") # used as BEGIN;
     return conn
 
 def create(name, schema, port):
@@ -590,9 +620,9 @@ def delete(conn, vals):
     cur = conn.cursor()
     if shared.SUT == "postgres":
         cur.execute("SELECT * FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + " FOR UPDATE NOWAIT;")
-        cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE" + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
+        cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
     else:
-        cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE" + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
+        cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
     debug(cur.rowcount, level=4)
 
 def clientDelete(args):

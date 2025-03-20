@@ -196,17 +196,17 @@ def singleLine(batch, metadata, openConns):
     # current statement
     
     if event["type"] == "open":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} open">BEGIN<br/>Transaction {event["transaction"]}<br/>{event["numStatements"]} statements{"<br/>Failure" if status["result"] == "failure" else ""}</div><div class="openConnLine"></div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} open">BEGIN<br/>Transaction {event["transaction"]}<br/>{event["numStatements"]} statements{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "insert":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} insert">INSERT {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}</div><div class="openConnLine"></div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} insert">INSERT {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "update":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} update">UPDATE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div><div class="openConnLine"></div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} update">UPDATE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "delete":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} delete">DELETE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div><div class="openConnLine"></div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} delete">DELETE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "commit":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} commit">Transaction {event["transaction"]}<br/>COMMIT{"<br/>Failure" if status["result"] == "failure" else ""}</div><div class="openConnLine"></div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} commit">Transaction {event["transaction"]}<br/>COMMIT{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div><div class="openConnLine"></div></td>"""
     elif event["type"] == "rollback":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} rollback">Transaction {event["transaction"]}<br/>ROLLBACK{"<br/>Failure" if status["result"] == "failure" else ""}</div><div class="openConnLine"></div></td>"""
+        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} rollback">Transaction {event["transaction"]}<br/>ROLLBACK{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div><div class="openConnLine"></div></td>"""
     
     # open transaction lines
     
