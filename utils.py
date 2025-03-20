@@ -364,8 +364,6 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 debug("commit transaction", transaction["id"], level=4)
                 metadata["numCommit"] += 1
                 
-                # lockedItems -= transaction["lockedVals"]
-                
                 if makeLog:
                     log.append({
                         "type": "commit",
@@ -390,10 +388,6 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 if not verification:
                     metadata["oldSnapshots"].append(dbContent)
                 dbContent = newContent
-                # for (f, args) in transaction["statements"]:
-                    # for c in openConns:
-                        # if len(c["statements"]) == 0: # TODO: COMMIT ONLY INSERTS ON UNTOUCHED CONNS -> BEGIN; CORRECT?
-                            # f((c["localContent"], args))
             
             else:
                 
