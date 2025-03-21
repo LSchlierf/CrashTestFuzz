@@ -16,7 +16,7 @@ WAL_FILES = {
 }
 
 def main():
-    p = argparse.ArgumentParser(prog="DBHWBench", formatter_class=argparse.RawTextHelpFormatter)
+    p = argparse.ArgumentParser(prog="CrashTestFuzz", formatter_class=argparse.RawTextHelpFormatter)
     
     p.add_argument("-v", "--verbose", action="count", help=f"Increases the verbosity level (max 4, default {shared.DEBUG_LEVEL})")
     

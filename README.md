@@ -1,4 +1,4 @@
-# DBHWBench
+# CrashTestFuzz
 
 A fuzzer for DBMS data loss bugs resulting from a file system failure.
 
@@ -18,7 +18,7 @@ Also make sure your local user can issue docker commands.
 
 ## Usage
 
-DBHWBench can
+CrashTestFuzz can
 
 - Verify its own logic against a DBMS
 - Test a DBMS using simulated fs failures
@@ -44,7 +44,7 @@ See the `configs` folder for more examples.
 
 ### Exporting test results
 
-DBHWBench can export the generated `.json` test results from a single container, both as a `.html` page as well as a perfetto `.trace` file (open with [ui.perfetto.dev](https://ui.perfetto.dev/)).
+CrashTestFuzz can export the generated `.json` test results from a single container, both as a `.html` page as well as a perfetto `.trace` file (open with [ui.perfetto.dev](https://ui.perfetto.dev/)).
 
 ```sh
 ./exportVisualization.py path/to/result1.json path/to/result2.json ...
@@ -54,7 +54,7 @@ The generated files are placed next to the given `.json` files. If the `.json` f
 
 ## Adding your own SUT
 
-DBHWBench is extensible with further SUTs. The following section descibes the requirements to add your own SUT.
+CrashTestFuzz is extensible with further SUTs. The following section descibes the requirements to add your own SUT.
 
 
 ### Docker image etc.
@@ -99,7 +99,7 @@ Should anything be unclear, check out the `SUT/postgres` folder.
 
 ### Code considerations
 
-Should your SUT log with timestamps, consider teaching DBHWBench how to read them by amending the function `suttimestamp` in `utils.py`. This will enable log merging, otherwise all log lines will be interpreted as having timestamp 0, meaning they will be at the very beginning of everything.
+Should your SUT log with timestamps, consider teaching CrashTestFuzz how to read them by amending the function `suttimestamp` in `utils.py`. This will enable log merging, otherwise all log lines will be interpreted as having timestamp 0, meaning they will be at the very beginning of everything.
 
 If you want to use the cmd line option `--walfile auto`, consider adding the path of the WAL-file for your SUT to the dict `WAL_FILES` in `main.py`. The file path should be qualified from the directory that lazyfs mounts to.
 
