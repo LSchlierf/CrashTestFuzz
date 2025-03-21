@@ -86,7 +86,7 @@ SUT
 
 These scripts should:
 
-- **build-image.sh:** build your docker imaage. Can take parameter WAL_SYNC_METHOD
+- **build-image.sh:** build your docker image. Can take parameter WAL_SYNC_METHOD
 - **prep-env.sh:** prepare the host environment for a single container: make a folder ("container-thecontainerid") with the lazyfs fifo ("faults.fio"), the lazyfs log target file ("lazyfs.log"), your sut log target file ("yoursutname.log") and the persisted lazyfs storage ("persisted"). Takes a container id.
 - **run-container.sh:** start the specified container (might not be the first start). The files specified for `prep-env.sh` should be mounted to the respective in-container counterpart using `docker run ... -v ./../container/container-$CONTAINER_ID/persisted:/tmp/lazyfs.root` for example. Takes the container id, port (may be 0, letting docker decide the port), and crash cmd to append to the lazyfs config before starting lazyfs (may be empty).
 - **stop-sut.sh:** stop the sut inside the container (without stopping lazyfs). Takes the container id

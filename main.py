@@ -30,7 +30,7 @@ def main():
     
     p.add_argument("--verify", action="store_const", const=True, default=None, help="If specified, will verify the seed(s), running without injected hardware faults")
     p.add_argument("--sut", choices=os.listdir("SUT"), help="System Under Test")
-    p.add_argument("-w", "--walfile", help="The Write-ahead-log file to crash LazyFS by. Pass \"auto\" for automatic selection depenting on the SUT.")
+    p.add_argument("-w", "--walfile", help="The Write-ahead-log file to crash LazyFS by. Pass \"auto\" for automatic selection depending on the SUT.")
     p.add_argument("-t", "--timing", help="The LazyFS crash timing")
     p.add_argument("-o", "--operation", help="The LazyFS operation to crash upon", choices=["create", "open", "read", "write", "fsync", "getattr"])
     p.add_argument("-m", "--sync-method", help="The WAL sync method to pass to the SUT", choices=shared.SYNC_METHODS)
