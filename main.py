@@ -65,7 +65,12 @@ def main():
     if n.verbose == None:
         n.verbose = 0
     if n.walfile == "auto":
-        n.walfile = WAL_FILES[n.sut]
+        if n.sut in WAL_FILES:
+            n.walfile = WAL_FILES[n.sut]
+        else:
+            p.print_usage()
+            utils.error(f"No WAL-file specified for SUT {n.sut}. See README.md on how to fix this.")
+            exit(1)
     
     setSharedValues(n)
     
@@ -99,7 +104,7 @@ def main():
         p.print_usage()
         print("Pass either a range of seeds using -f [--from] and -u [--until] or specify single seeds using -r [--randseed].")
         print("Use -h for more details.")
-        exit(0)
+        exit(1)
             
     utils.info("All done.")
 
