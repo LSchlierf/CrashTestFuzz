@@ -50,14 +50,13 @@ CrashTestFuzz can export the generated `.json` test results from a single contai
 ./exportVisualization.py path/to/result1.json path/to/result2.json ...
 ```
 
-The generated files are placed next to the given `.json` files. If the `.json` file is in the `logs/thesut/...` folder, the script will automatically detect the proper SUT, otherwise you will be prompted to enter the SUT name.
+The generated files are placed next to the given `.json` files. If the `.json` file is in the `logs/thesutname/...` folder, the script will automatically detect the proper SUT name, otherwise you will be prompted to enter the SUT name.
 
 ## Adding your own SUT
 
 CrashTestFuzz is extensible with further SUTs. The following section descibes the requirements to add your own SUT.
 
-
-### Docker image etc.
+### Docker image etc
 
 Your SUT should run inside a Docker container. The SUT folder should be made in the following structure:
 
