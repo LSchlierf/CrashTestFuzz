@@ -1,5 +1,6 @@
 import itertools
 import json
+import queue
 import shared
 import shutil
 from threading import Thread
@@ -10,6 +11,14 @@ test_db = {
     "name": shared.DB_TABLENAME,
     "schema": [("a", "int"), ("b", "int")]
 }
+
+parents = {}
+results = {}
+q = queue.Queue()
+
+#########
+# UTILS #
+#########
 
 def getTestMetadata():
     return {
@@ -36,12 +45,20 @@ def copyPersisted(seed, id):
         dirs_exist_ok=True
     )
 
-def logAll(seed, id, metadata, log, restarts=0):
+def dumpTestMetadata(seed, id, testMetadata, parentID=""):
     if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}"):
         os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
     dumpIntoFile(
         f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/{id}.json",
-        json.dumps({"metadata": metadata, "log": log}, indent=4)
+        json.dumps({"testMetadata": testMetadata, "parentID": parentID}, indent=4)
+    )
+
+def logAll(seed, id, metadata, log, restarts=0, parentID=""):
+    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}"):
+        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
+    dumpIntoFile(
+        f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/{id}.json",
+        json.dumps({"metadata": metadata, "log": log, "parentID": parentID}, indent=4)
     )
     try:
         copyLogs(seed, id, restarts)
@@ -49,178 +66,65 @@ def logAll(seed, id, metadata, log, restarts=0):
     except:
         pass
 
-def runTestThreaded(batch, threadNumber, hurdle, seed, results, ids, makeLog):
-    tls.number = threadNumber + 1
-    tls.batch = batch + 1
-    debug("running test in thread", threadNumber + 1, "hurdle is", hurdle, level=2)
-    try:
-        (result, id) = runTest(hurdle, seed, makeLog)
-        ids[batch * shared.CONCURRENT_TESTS + threadNumber] = id
-        if result == False:
-            error("Test failed, seed", seed)
-        else:
-            results[batch * shared.CONCURRENT_TESTS + threadNumber] = result
-    except Exception as e:
-        error("Test failed with exception", type(e), e, traceback.format_exc(), "seed", seed)
+##################
+# SEED BENCHMARK #
+##################
 
-def runTest(hurdle, seed, makeLog):
-    cmd = "\n".join(["\n[[injection]]", "type = \"clear-cache\"", f"from = \"/tmp/lazyfs.root/{shared.FILE}\"", f"timing = \"{shared.TIMING}\"", f"op = \"{shared.OP}\"", f"occurrence = {hurdle}", "crash = true"])
-    id = prepHostEnvironment()
-    testMetadata = {
-        "cmd": cmd,
-        "hurdle": hurdle,
-        "seed": seed,
-        **getTestMetadata()
-    }
-    port = runContainer(id, crashcmd=cmd)
-    if not waitUntilAvailable(id, port, 90):
-        return (False, id)
-    try:
-        create(shared.DB_TABLENAME, test_db["schema"], port)
-    except:
-        return (False, id)
-    (content, metadata, log) = runWorkload(port, id, seed, True)
-    initialSuccess = False
-    if metadata["successful"]:
-        try:
-            if verify(shared.DB_TABLENAME, content, port):
-                initialSuccess = True
-                info("Initial trace ran without faults")
-            stopSUT(id)
-        except:
-            pass
-    else:
-        info("Initial trace ran with faults")
-    testMetadata["traceHash"] = traceHash(log)
-    debug("trace hash:", testMetadata["traceHash"], level=1)
-    try:
-        stopContainer(id, supressErrors=True)
-        if makeLog in ["all", "failed"]:
-            mergeLogs(metadata, log, id)
-            copyLogs(seed, id, 0)
-        port = runContainer(id)
-        if not waitUntilAvailable(id, port, 600):
-            info("Container didn't restart")
-            del metadata["oldSnapshots"]
-            testMetadata["result"] = "no-restart"
-            metadata["testMetadata"] = testMetadata
-            if makeLog in ["all", "failed"]:
-                stopContainer(id, supressErrors=True)
-                addRestartLog(metadata, id)
-                logAll(seed, id, metadata, log, 1)
-            cleanupContainer(id)
-            return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
-        if verify(shared.DB_TABLENAME, content, port, supressErrors=True):
-            if "altContent" in metadata:
-                debug("Correct db content after restart, lost commit", level=1)
-            else:
-                debug("Correct db content after restart", level=1)
-            del metadata["oldSnapshots"]
-            testMetadata["result"] = ("correct-content" + ("; lost-commit" if "altContent" in metadata else ""))
-            metadata["testMetadata"] = testMetadata
-            if makeLog == "all":
-                stopContainer(id, supressErrors=True)
-                addRestartLog(metadata, id)
-                logAll(seed, id, metadata, log, 1)
-            cleanupContainer(id)
-            return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
-        else:
-            if "altContent" in metadata and verify(shared.DB_TABLENAME, metadata["altContent"], port, supressErrors=True):
-                debug("Correct db content after restart, unconfirmed commit", level=1)
-                testMetadata["result"] = "correct-content; unconfirmed-commit"
-                metadata["testMetadata"] = testMetadata
-                if makeLog == "all":
-                    stopContainer(id, supressErrors=True)
-                    addRestartLog(metadata, id)
-                    logAll(seed, id, metadata, log, 1)
-                cleanupContainer(id)
-                del metadata["oldSnapshots"]
-                return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
-            for i in range(len(metadata["oldSnapshots"])):
-                if verify(shared.DB_TABLENAME, metadata["oldSnapshots"][-(i + 1)], port, supressErrors=True):
-                    lostCommits = i + 1
-                    info(lostCommits, "lost commit(s)")
-                    break
-            testMetadata["result"] = "incorrect-content" + ("; lost-commits: " + str(lostCommits) if lostCommits else "")
-            actual = dump(shared.DB_TABLENAME, port)
-            mismatch = list(set(content) ^ set(actual))
-            testMetadata["details"] = {"expected": content, "actual": actual, "mismatch": mismatch}
-            metadata["testMetadata"] = testMetadata
-            if makeLog in ["all", "failed"]:
-                stopContainer(id, supressErrors=True)
-                addRestartLog(metadata, id)
-                logAll(seed, id, metadata, log, 1)
-            cleanupContainer(id)
-            return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
-    except Exception as e:
-        error(type(e), "exception occured:", e)
-        testMetadata["result"] = "error"
-        testMetadata["details"] = traceback.format_exc()
-        metadata["testMetadata"] = testMetadata
-        if makeLog in ["all", "failed"]:
-            stopContainer(id, supressErrors=True)
-            addRestartLog(metadata, id)
-            logAll(seed, id, metadata, log, 1)
-        cleanupContainer(id)
-        return ({"result": testMetadata["result"], "traceHash": testMetadata["traceHash"], "initialTraceSuccessful": initialSuccess}, id)
-
-def runSeedsThreaded(makeLog, seeds):
+def runSeeds(makeLog, seeds):
     
     shared.TEST_RUN = "test-" + getFormattedTimestamp()
 
     buildSUTImage(wal_sync_method=shared.SYNC_METHOD)
-    for seed in seeds:
+    for (batch, seed) in enumerate(seeds):
         if os.path.exists(".terminate"):
             info("Terminating")
             os.remove(".terminate")
             break
+        
+        results.clear()
+        parents.clear()
+        
         debug("seed", seed, level=1)
-
-        results = [{} for _ in range(shared.STEPS)]
-        ids = ["" for _ in range(shared.STEPS)]
-
+        
+        parentID = createAndPrepareContainer()
+    
         debug("running workload without injected faults", level=1)
 
-        containerID = prepHostEnvironment()
-        port = runContainer(containerID)
+        duplicateID = duplicateContainer(parentID)
+        port = runContainer(duplicateID)
 
-        if not waitUntilAvailable(containerID, port, timeout=90):
+        if not waitUntilAvailable(duplicateID, port, timeout=90):
             error("container didn't start, seed", seed)
-            if log in ["all", "failed"]:
-                mergeLogs(metadata, log, containerID)
-                logAll(seed, containerID, metadata, log)
-            cleanupContainer(containerID)
-            continue
-        
-        create(shared.DB_TABLENAME, test_db["schema"], port=port)
-        
-        (content, metadata, log) = runWorkload(port, containerID, seed, True)
-        
+            cleanupContainer(duplicateID)
+            return
+
+        (content, metadata, log) = runWorkload(port, duplicateID, seed, True)
+
         if not metadata["successful"]:
             error("first run failed, seed", seed)
-            if log in ["all", "failed"]:
-                mergeLogs(metadata, log, containerID)
-                logAll(seed, containerID, metadata, log)
-            cleanupContainer(containerID)
-            continue
+            if makeLog in ["all", "failed"]:
+                mergeLogs(metadata, log, duplicateID)
+                logAll(seed, duplicateID, metadata, log)
+            cleanupContainer(duplicateID)
+            return
 
         cth = traceHash(log)
         debug("correct trace hash:", cth, level=1)
-        
-        stopSUT(containerID)
 
-        lazyfsLogs = readLogs(containerID, "lazyfs")
-        cleanupContainer(containerID)
+        stopSUT(duplicateID)
+
+        lazyfsLogs = readLogs(duplicateID, "lazyfs")
+        cleanupContainer(duplicateID)
 
         files = extractFiles(lazyfsLogs)
         if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}"):
             os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
-        dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testfiles.json", json.dumps(files, indent=4), force=True)
+        dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testfiles-{duplicateID}.json", json.dumps({"parent": parentID, "fileOps": files}, indent=4), force=True)
 
         maxOps = 0
         for item in files:
-            if shared.FILE in item and shared.OP in files[item]:
-                maxOps = max(maxOps, files[item][shared.OP])
+            if shared.FILE[0] in item and shared.OP[0] in files[item]:
+                maxOps = max(maxOps, files[item][shared.OP[0]])
 
         stepSize = max(int(maxOps / shared.STEPS), 1)
 
@@ -230,53 +134,279 @@ def runSeedsThreaded(makeLog, seeds):
 
         debug(len(hurdles), "hurdles:", hurdles, level=3)
         
-        for (index, batch) in enumerate(itertools.batched(hurdles, shared.CONCURRENT_TESTS)):
-            
-            debug("running test batch", index + 1, level=1)
-            threads = [Thread(target=runTestThreaded, args=(index, number, hurdle, seed, results, ids, makeLog)) for (number, hurdle) in enumerate(batch)]
-            
-            for (n, t) in enumerate(threads):
-                debug("starting thread", n + 1, level=2)
-                t.start()
-            for (n, t) in enumerate(threads):
-                debug("joining thread", n + 1, level=2)
-                t.join()
-
-            debug("finished test batch", index + 1, level=1)
-            cleanupEnvs(supressErrors=True)
-
-        if not False in results:
-            debug("all tests ran without errors.", level=1)
-        else:
-            error("Errors in tests", [n for (n, s) in enumerate(results) if not s], "with hurdles", [hurdles[i] for (i, s) in enumerate(results) if not s])
-            if makeLog == "retry":
-                for h in [hurdles[i] for (i, s) in enumerate(results) if not s]:
-                    runTest(h, seed, "all")
-                cleanupEnvs(supressErrors=True)
-            debug("seed was", seed, level=1)
+        for (index, hurdle) in enumerate(hurdles):
+            q.put(Thread(target=runIteration, args=(duplicateID, parentID, [], batch, str(index), seed, hurdle, makeLog, shared.RECURSION_DEPTH, shared.STEPS)))
         
-        testResults = [{"hurlde": hurdles[i], "result": results[i], "id": ids[i]} for i in range(shared.STEPS)]
-        dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testMetadata.json", json.dumps({"parameters": {
-            "SUT": shared.SUT,
-            "generated": getFormattedTimestamp(),
-            "seed": seed,
-            "correctTraceHash": cth,
-            "sync_method": shared.SYNC_METHOD,
-            "steps": shared.STEPS,
-            **getTestMetadata(),
-            **getMetadata()
-        }, "results": testResults}, indent=4), force=True)
+        threads = []
+        
+        # this is fine, this thread is the only consumer + any thread that enqueues new ones does so before terminating
+        while not q.qsize() == 0:
+            
+            for _ in range(shared.CONCURRENT_TESTS):
+                if q.qsize() == 0:
+                    break
+                threads.append(q.get())
 
-    cleanupAll(supressErrors=True)
-    debug("all done.", level=1)
+            info("Starting group of", len(threads))
+            
+            for t in threads:
+                t.start()
+            
+            for t in threads:
+                t.join()
+            
+            threads.clear()
+            
+            info("Group finished,", q.qsize(), "queued")
+        
+        dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testResult.json", json.dumps({"parents": parents, "results": results}, indent=4), force=True)
+        cleanupEnvs()
+
+        info("Batch finished")
+    
+    cleanupAll()
+
+def createAndPrepareContainer():
+    id = prepHostEnvironment()
+    port = runContainer(id)
+    waitUntilAvailable(id, port, 90, kill=True)
+    create(test_db["name"], test_db["schema"], port)
+    stopContainer(id)
+    return id
+
+def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed, hurdle, makeLog, remainingDepth, steps):
+    
+    tls.batch = batch
+    tls.number = number
+    
+    depth = shared.RECURSION_DEPTH - remainingDepth
+    file = shared.FILE[depth] if len(shared.FILE) > depth else shared.FILE[-1]
+    timing = shared.TIMING[depth] if len(shared.TIMING) > depth else shared.TIMING[-1]
+    operation = shared.OP[depth] if len(shared.OP) > depth else shared.OP[-1]
+    
+    debug("running workload with hurdle", hurdle, "on", file, timing, operation, level=1)
+    
+    cmd = "\n".join(["\n[[injection]]", "type = \"clear-cache\"", f"from = \"/tmp/lazyfs.root/{file}\"", f"timing = \"{timing}\"", f"op = \"{operation}\"", f"occurrence = {hurdle}", "crash = true"])
+    
+    childID = duplicateContainer(parentTemplateID)
+    testMetadata = {
+        "cmd": cmd,
+        "hurdle": hurdle,
+        "seed": seed,
+        "parent": parentID,
+        "depth": depth,
+        "number": number,
+        "checkpoint": shared.CHECKPOINT,
+        "targetFile": file,
+        "timing": timing,
+        "operation": operation
+    }
+    
+    port = runContainer(childID, crashcmd=cmd)
+    startup = False
+    if not waitUntilAvailable(childID, port, 90):
+        info("no startup")
+        testMetadata["result"] = "no-start"
+        testMetadata["id"] = childID
+        parents[childID] = parentID
+        results[childID] = testMetadata
+        stopContainer(childID, supressErrors=True)
+        if makeLog in ["all", "failed"]:
+            copyLogs(seed, childID, depth)
+        content = parentContent
+    
+    else:
+        (content, metadata, log) = runWorkload(port, childID, seed, True, dbContent=parentContent)
+        mergeLogs(metadata, log, childID)
+        startup = True
+        testMetadata["traceHash"] = traceHash(log)
+        stopContainer(childID, supressErrors=True)
+        if metadata["successful"]:
+            testMetadata["result"] = "initial-success"
+            metadata["testMetadata"] = testMetadata
+            if makeLog == "all":
+                logAll(seed, childID, metadata, log, depth, parentID)
+            parents[childID] = parentID
+            results[childID] = testMetadata
+            info("successful workflow, early return")
+            return
+        else:    
+            if makeLog in ["all", "failed"]:
+                copyLogs(seed, childID, depth)
+    
+    duplicateID = duplicateContainer(childID)
+    port = runContainer(duplicateID)
+    
+    parents[duplicateID] = parentID
+    testMetadata["template"] = childID
+    testMetadata["id"] = duplicateID
+    
+    if startup:
+
+        if not waitUntilAvailable(duplicateID, port, 90):
+            info("container didn't restart")
+            del metadata["oldSnapshots"]
+            if "altContent" in metadata:
+                del metadata["altContent"]
+            testMetadata["result"] = "no-restart"
+            metadata["testMetadata"] = testMetadata
+            results[duplicateID] = testMetadata
+            if makeLog in ["all", "failed"]:
+                stopContainer(duplicateID, supressErrors=True)
+                addRestartLog(metadata, duplicateID)
+                logAll(seed, duplicateID, metadata, log, depth, parentID)
+            cleanupContainer(duplicateID)
+            cleanupContainer(childID)
+            return
+
+        if verify(shared.DB_TABLENAME, content, port, supressErrors=True):
+            info("correct content", ("lost-commit" if "altContent" in metadata else ""))
+            testMetadata["result"] = ("correct-content" + ("; lost-commit" if "altContent" in metadata else ""))
+            del metadata["oldSnapshots"]
+            if "altContent" in metadata:
+                del metadata["altContent"]
+            metadata["testMetadata"] = testMetadata
+            results[duplicateID] = testMetadata
+            stopContainer(duplicateID, supressErrors=True)
+            if makeLog == "all":
+                addRestartLog(metadata, duplicateID)
+                logAll(seed, duplicateID, metadata, log, depth, parentID)
+
+        elif "altContent" in metadata and verify(shared.DB_TABLENAME, metadata["altContent"], port, supressErrors=True):
+            info("correct content, unconfirmed commit")
+            testMetadata["result"] = "correct-content; unconfirmed-commit"
+            content = metadata["altContent"]
+            del metadata["oldSnapshots"]
+            del metadata["altContent"]
+            metadata["testMetadata"] = testMetadata
+            results[duplicateID] = testMetadata
+            stopContainer(duplicateID, supressErrors=True)
+            if makeLog == "all":
+                addRestartLog(metadata, duplicateID)
+                logAll(seed, duplicateID, metadata, log, depth, parentID)  
+
+        else:
+            oldMatch = False
+            for i in range(len(metadata["oldSnapshots"])):
+                if verify(shared.DB_TABLENAME, metadata["oldSnapshots"][-(i + 1)], port, supressErrors=True):
+                    oldMatch = True
+                    lostCommits = i + 1
+                    break
+                
+            if oldMatch:
+                info(lostCommits, "lost commit(s)")
+                testMetadata["result"] = f"incorrect-content; lost-commits: {lostCommits}"
+                content = metadata["oldSnapshots"][-lostCommits]
+                del metadata["oldSnapshots"]
+                if "altContent" in metadata:
+                    del metadata["altContent"]
+                metadata["testMetadata"] = testMetadata
+                results[duplicateID] = testMetadata
+                stopContainer(duplicateID, supressErrors=True)
+                if makeLog in ["all", "failed"]:
+                    addRestartLog(metadata, duplicateID)
+                    logAll(seed, duplicateID, metadata, log, depth, parentID)
+
+            else:
+                info("incorrect content")
+                testMetadata["result"] = "incorrect-content"
+                actual = dump(shared.DB_TABLENAME, port)
+                mismatch = list(set(content) ^ set(actual))
+                testMetadata["details"] = {"expected": content, "actual": actual, "mismatch": mismatch}
+                del metadata["oldSnapshots"]
+                if "altContent" in metadata:
+                    del metadata["altContent"]
+                metadata["testMetadata"] = testMetadata
+                results[duplicateID] = testMetadata
+                stopContainer(duplicateID, supressErrors=True)
+                if makeLog in ["all", "failed"]:
+                    addRestartLog(metadata, duplicateID)
+                    logAll(seed, duplicateID, metadata, log, depth, parentID)
+                cleanupContainer(duplicateID)
+                cleanupContainer(childID)
+                return
+    
+    else:
+        
+        if not waitUntilAvailable(duplicateID, port, 90):
+            info("container didn't restart")
+            testMetadata["result"] = "no-restart"
+            results[duplicateID] = testMetadata
+            stopContainer(duplicateID, supressErrors=True)
+            if makeLog in ["all", "failed"]:
+                copyLogs(seed, duplicateID, depth)
+                addRestartLog(testMetadata, duplicateID)
+                dumpTestMetadata(seed, duplicateID, testMetadata, parentID)
+            cleanupContainer(duplicateID)
+            cleanupContainer(childID)
+            return
+            
+        if verify(shared.DB_TABLENAME, content, port, supressErrors=True):
+            info("correct parent content")
+            testMetadata["result"] = "correct-parent-content"
+            results[duplicateID] = testMetadata
+            stopContainer(duplicateID, supressErrors=True)
+            if makeLog == "all":
+                copyLogs(seed, duplicateID, depth)
+                addRestartLog(testMetadata, duplicateID)
+                dumpTestMetadata(seed, duplicateID, testMetadata, parentID)
+            
+        else:
+            info("incorrect parent content")
+            testMetadata["result"] = "incorrect-parent-content"
+            actual = dump(shared.DB_TABLENAME, port)
+            mismatch = list(set(content) ^ set(actual))
+            testMetadata["details"] = {"expected": content, "actual": actual, "mismatch": mismatch}
+            results[duplicateID] = testMetadata
+            stopContainer(duplicateID, supressErrors=True)
+            if makeLog in ["all", "failed"]:
+                copyLogs(seed, duplicateID, depth)
+                addRestartLog(testMetadata, duplicateID)
+                dumpTestMetadata(seed, duplicateID, testMetadata, parentID)
+            cleanupContainer(duplicateID)
+            cleanupContainer(childID)
+            return
+    
+    if remainingDepth == 0:
+        info("recursion floor reached")
+        cleanupContainer(childID)
+        cleanupContainer(duplicateID)
+        return
+        
+    lazyfsLogs = readLogs(duplicateID, "lazyfs")
+    cleanupContainer(duplicateID)
+
+    files = extractFiles(lazyfsLogs)
+    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}"):
+        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
+    dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testfiles-{duplicateID}-{depth}.json", json.dumps({"parent": parentID, "fileOps": files}, indent=4), force=True)
+
+    newFile = shared.FILE[depth + 1] if len(shared.FILE) > depth + 1 else shared.FILE[-1]
+    newOp = shared.OP[depth + 1] if len(shared.OP) > depth + 1 else shared.OP[-1]
+
+    maxOps = 0
+    for item in files:
+        if newFile in item and newOp in files[item]:
+            maxOps = max(maxOps, files[item][newOp])
+
+    stepSize = max(int(maxOps / steps), 1)
+
+    debug("max number of ops is", maxOps, "step size is", stepSize, level=3)
+
+    hurdles = [(i+1) * stepSize for i in range(steps)]
+
+    debug(len(hurdles), "hurdles:", hurdles, level=3)
+    
+    for (index, h) in enumerate(hurdles):
+        q.put(Thread(target=runIteration, args=(duplicateID, childID, content, batch, f"{number}.{index}", seed, h, makeLog, remainingDepth - 1, max(int(steps / shared.RECURSION_FACTOR), 1))))
 
 #####################
 # SEED VERIFICATION #
 #####################
 
 def verifySeedThreaded(batch, threadNumber, seed, results, makeLog):
-    tls.number = threadNumber + 1
-    tls.batch = batch + 1
+    tls.number = f"{(threadNumber + 1):02d}"
+    tls.batch = str(batch + 1)
     debug("verifying seed", seed, level=1)
     try:
         if verifySeed(seed, makeLog):

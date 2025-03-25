@@ -19,7 +19,7 @@ import uuid
 
 def getThreadId():
     if hasattr(tls, "number"):
-        return f" \033[34m[Thread {tls.batch}|{tls.number:02d}]\033[0m"
+        return f" \033[34m[Thread {tls.batch}|{tls.number}]\033[0m"
     return ""
 
 def getFormattedTimestamp():
@@ -44,7 +44,7 @@ def info(*msg):
 # WORKLOAD UTILS #
 ##################
 
-def runWorkload(port, id, seed=None, makeLog=False, verification=False):
+def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbContent = []):
     """runs a workload on a given postgres port
     
     Arguments:
@@ -77,7 +77,6 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
     r = random.Random(seed)
     openConns = []
     finishedTransactions = []
-    dbContent = []
     lockedItems = set()
     log = []
     (ccMu, ccVar) = shared.CONCURRENT_TRANSACTIONS
@@ -125,6 +124,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
             try:
                 newConn = connect(port)
             except Exception as e:
+                if verification:
+                    error(type(e), "exception occurred during open", e)
                 if makeLog:
                     log.append({"result": "failure", "logs": [], "details": str(e)})
                 return (dbContent, metadata, log)
@@ -177,7 +178,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                     clientInsert((currConn["localContent"], values))
                 except Exception as e:
                     if verification:
-                        error(type(e), "exception occurred", e)
+                        error(type(e), "exception occurred during insert", e)
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
@@ -255,7 +256,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 
                 except Exception as e:
                     if verification:
-                        error(type(e), "exception occurred", e)
+                        error(type(e), "exception occurred during update,", ("cc" if expectCC else "no cc"), e)
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
@@ -332,7 +333,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                 
                 except Exception as e:
                     if verification:
-                        error(type(e), "exception occurred", e)
+                        error(type(e), "exception occurred during delete,", ("cc" if expectCC else "no cc"), e)
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
@@ -380,7 +381,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                     transaction["c"].close()
                 except Exception as e:
                     if verification:
-                        error(type(e), "exception occurred", e)
+                        error(type(e), "exception occurred during commit", e)
                     metadata["altContent"] = newContent
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e)})
@@ -412,7 +413,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False):
                     transaction["c"].close()
                 except Exception as e:
                     if verification:
-                        error(type(e), "exception occurred", e)
+                        error(type(e), "exception occurred during rollback", e)
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e)})
                     return (dbContent, metadata, log)
@@ -677,6 +678,20 @@ def prepHostEnvironment(containerID=None):
         error(r.stderr.decode(), kill=True)
     debug("\033[1mdone\033[0m preparing env", level=2)
     return containerID
+
+def duplicateContainer(containerID, newContainerID=None):
+    debug("duplicating container", containerID, level=2)
+    if newContainerID is None:
+        newContainerID = str(uuid.uuid4())
+        debug("no container ID given, generated ID " + newContainerID, level=3)
+    r = subprocess.run(["bash", "./duplicate-container.sh", containerID, newContainerID], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # TODO: duplicate logs from prev runs
+    if r.returncode != 0:
+        error("duplicating container failed with code", r.returncode)
+        error(r.stdout.decode())
+        error(r.stderr.decode(), kill=True)
+    debug("\033[1mdone\033[0m duplicating container", level=2)
+    return newContainerID
 
 def runContainer(containerID, port=0, crashcmd=""):
     debug("running container", containerID, level=2)

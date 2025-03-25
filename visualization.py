@@ -2,14 +2,14 @@ import itertools
 import json
 import shared
 from utils import debug, getFormattedTimestamp, traceHash
+    
+successfulText = "<span style=\"color: green\">successful</span>"
+unsuccessfulText = "<span style=\"color: red\">not successful</span>"
 
-def makeHTMLPage(metadata, log, containerId):
+def makeHTMLPage(data, containerId):
     debug("generating HTML report for id", containerId, level=2)
     
     # header, styling and metadata
-    
-    successfulText = "<span style=\"color: green\">successful</span>"
-    unsuccessfulText = "<span style=\"color: red\">not successful</span>"
     
     page = f"""<!DOCTYPE html><html><head><title>{containerId} | Transaction log</title><style>
 table, td {{
@@ -109,7 +109,10 @@ details > summary {{
     bottom: 50%;
 }}
 .failure {{
+    width: 20em;
     background: lightcoral;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }}
 #metadata {{
     padding-bottom: 30px;
@@ -118,7 +121,23 @@ details > summary {{
 <b>Transaction log for {containerId}</b><br/>
 Generated {getFormattedTimestamp()}<br/><br/>
 <b>Workload information</b><br/>
-System under test (SUT): {shared.SUT}<br/>
+System under test (SUT): {shared.SUT}<br/>"""
+
+    for item in data:
+        page += singleItem(item)
+    
+    # table footer, page end
+    
+    page += """</body></html>"""
+    return page
+
+def singleItem(data):
+    if "metadata" in data:
+        log = data["log"]
+        metadata = data["metadata"]
+        block = ""
+        if metadata["testMetadata"]["depth"] == 0:
+            block += f"""
 Seed: {str(metadata["seed"])} {"(given)" if metadata["seedGiven"] else "(generated)"}<br/>
 Transactions: {metadata["transactions"]}<br/>
 Concurrent connections: {metadata["concurrentConnections"]["avg"]} (avg) | {metadata["concurrentConnections"]["var"]} (var)<br/>
@@ -129,7 +148,9 @@ Probability for Rollback: {metadata["pRollback"]}<br/>
 Probability for Insert: {metadata["pInsert"]}<br/>
 Probability for Update: {metadata["pUpdate"]}<br/>
 Probability for Delete: {metadata["pDelete"]}<br/>
-Probability for Serialization Failure: {metadata["pSerializationFailure"]}<br/><br/>
+Probability for Serialization Failure: {metadata["pSerializationFailure"]}<br/>"""
+
+        block += f"""<br/><br/>{testMetadata(metadata)}
 <b>Trace information</b><br/>
 Number of INSERTs: {metadata["numInsert"]}<br/>
 Number of UPDATEs: {metadata["numUpdate"]} | of which produced concurrency conflict: {metadata["numCCUpdate"]} ({round(metadata["numCCUpdate"] / metadata["numUpdate"] * 100, 1) if metadata["numUpdate"] != 0 else "0"}%) (Target: {round(metadata["pSerializationFailure"] * 100, 1)}%)<br/>
@@ -137,35 +158,37 @@ Number of DELETEs: {metadata["numDelete"]} | of which produced concurrency confl
 Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%) (Target: {round(metadata["pCommit"] * 100, 1)}%)<br/>
 Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%) (Target: {round(metadata["pRollback"] * 100, 1)}%) (Not including concurrency conflicts)<br/>
 Trace hash: <b>{traceHash(log)}</b><br/>
-Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/><br/>{testMetadata(metadata)}
+Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/><br/>
 <details><summary>Initial log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details>
 {restartLog(metadata)}
 </div><table><thead><tr><td></td>"""
     
-    # table header
+        # table header
     
-    for i in range(metadata["transactions"]):
-        page += f"<td>{i}</td>"
+        for i in range(metadata["transactions"]):
+            block += f"<td>{i}</td>"
+
+        block += """<td class="farRight">logs</td></tr></thead><tbody>"""
+
+        # table rows
+
+        openConns = []
+
+        for event in itertools.batched(log, 2):
+            if len(event) == 2:
+                (info, _) = event
+                if info["type"] == "open":
+                    openConns.append(info["transaction"])
+                elif info["type"] == "commit" or info["type"] == "rollback":
+                    openConns.remove(info["transaction"])
+            block += singleLine(event, metadata, openConns)
+        
+        block += "</tbody></table><br/><br/>"
     
-    page += """<td class="farRight">logs</td></tr></thead><tbody>"""
+        return block
     
-    # table rows
-    
-    openConns = []
-    
-    for event in itertools.batched(log, 2):
-        if len(event) == 2:
-            (info, _) = event
-            if info["type"] == "open":
-                openConns.append(info["transaction"])
-            elif info["type"] == "commit" or info["type"] == "rollback":
-                openConns.remove(info["transaction"])
-        page += singleLine(event, metadata, openConns)
-    
-    # table footer, page end
-    
-    page += """</tbody></table></body></html>"""
-    return page
+    else:
+        return f"""<br/><br/>{testMetadata(data)}{restartLog(data["testMetadata"])}"""
 
 def singleLine(batch, metadata, openConns):
     if len(batch) == 2:
@@ -245,13 +268,16 @@ def testMetadata(metadata):
         result = f"""<span style="color: green">correct content after restart{d["result"][15:]}</span>"""
     elif d["result"].startswith("incorrect-content"):
         result = f"""<span style="color: red">incorrect content after restart{d["result"][17:]}</span>"""
+    elif d["result"] == "correct-parent-content":
+        result = """<span style="color: green">correct (unchanged) content after crash during restart</span>"""
     elif d["result"] == "no-restart":
         result = """<span style="color: orange">container didn't restart</span>"""
     elif d["result"] == "error":
         result = """<span style="color: orange">error</span>"""
         
     
-    return f"""<b>Test information</b><br/>
+    return f"""<b>Test information for depth {d["depth"]}</b><br/>
+Number: {d["number"]}<br/>
 Target file: {d["targetFile"]}<br/>
 Timing: {d["timing"]}<br/>
 Operation: {d["operation"]}<br/>

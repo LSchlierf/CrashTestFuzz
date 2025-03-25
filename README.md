@@ -14,13 +14,13 @@ sudo apt update && sudo apt install python3 python3-dev libpq-dev
 pip install psycopg2
 ```
 
-Also make sure your local user can issue docker commands.
+Also make sure your local user can issue [docker](https://docs.docker.com/engine/install/) commands.
 
 ## Usage
 
 CrashTestFuzz can
 
-- Verify its own logic against a DBMS
+- Verify its own logic against a DBMS / fuzz a DBMS without fs failures
 - Test a DBMS using simulated fs failures
 - Visualize test results
 
@@ -69,6 +69,7 @@ SUT
     |   |-- cleanup-all.sh
     |   |-- cleanup-env.sh
     |   |-- cleanup-envs.sh
+    |   |-- duplicate-container.sh
     |   |-- prep-env.sh
     |   |-- run-container.sh
     |   |-- stop-contaienr.sh
@@ -85,12 +86,13 @@ SUT
 
 These scripts should:
 
-- **build-image.sh:** build your docker image. Can take parameter WAL_SYNC_METHOD
+- **build-image.sh:** build your docker image. Can take parameter WAL_SYNC_METHOD.
 - **prep-env.sh:** prepare the host environment for a single container: make a folder ("container-thecontainerid") with the lazyfs fifo ("faults.fio"), the lazyfs log target file ("lazyfs.log"), your sut log target file ("yoursutname.log") and the persisted lazyfs storage ("persisted"). Takes a container id.
+- **duplicate-container.sh** prepare the host environment similar to *prep-env.sh*, except that "persisted" is copied from an existing (stopped) container. Takes the existing and new container id.
 - **run-container.sh:** start the specified container (might not be the first start). The files specified for `prep-env.sh` should be mounted to the respective in-container counterpart using `docker run ... -v ./../container/container-$CONTAINER_ID/persisted:/tmp/lazyfs.root` for example. Takes the container id, port (may be 0, letting docker decide the port), and crash cmd to append to the lazyfs config before starting lazyfs (may be empty).
-- **stop-sut.sh:** stop the sut inside the container (without stopping lazyfs). Takes the container id
-- **stop-container.sh:** stop the container (optionally stopping the sut and lazyfs before). Takes the container id
-- **cleanup-env.sh:** clean up the container directory of a stopped container. Takes the container id
+- **stop-sut.sh:** stop the sut inside the container (without stopping lazyfs). Takes the container id.
+- **stop-container.sh:** stop the container (optionally stopping the sut and lazyfs before). Takes the container id.
+- **cleanup-env.sh:** clean up the container directory of a stopped container. Takes the container id.
 - **cleanup-envs.sh:** stop all containers, remove them, and clean up all container direcotries.
 - **cleanup-all.sh:** stop all containers, remove them, clean up all container directories and remove the docker image.
 

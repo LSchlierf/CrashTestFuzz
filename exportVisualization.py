@@ -3,6 +3,7 @@ import json
 import os
 import shared
 import sys
+import traceback
 import utils
 import visualization
 
@@ -23,7 +24,7 @@ def export(path):
         
     try:
         with open(path, "r") as f:
-            data = json.load(f)
+            data = [json.load(f)]
         
         if "logs/" in path:
             shared.SUT = path.split("logs/")[1].split("/")[0]
@@ -34,11 +35,25 @@ def export(path):
             else:
                 shared.SUT = "unknown"
         
-        utils.dumpIntoFile(path.split(".json")[0] + ".html", visualization.makeHTMLPage(data["metadata"], data["log"], path.split(".json")[0].split("/")[-1]), force=True)
-        utils.dumpIntoFile(path.split(".json")[0] + ".trace", visualization.makeTrace(data["log"], path.split(".json")[0].split("/")[-1]), force=True)
+        if "parentID" in data[0]: # test report
+            
+            depth = data[0]["testMetadata"]["depth"] if "testMetadata" in data[0] else data[0]["metadata"]["testMetadata"]["depth"]
+            
+            for _ in range(depth):
+                parent = data[0]["parentID"]
+                utils.debug("collecting parent", parent, level=1)
+                parentFile = os.sep.join(path.split(os.sep)[:-1] + [parent + ".json"])
+                if not os.path.exists(parentFile):
+                    utils.error("Parent not found:", parent)
+                with open(parentFile, "r") as f:
+                    data.insert(0, json.load(f))            
+            
+        utils.dumpIntoFile(path.split(".json")[0] + ".html", visualization.makeHTMLPage(data, path.split(".json")[0].split("/")[-1]), force=True)
+        if "log" in data[-1]:
+            utils.dumpIntoFile(path.split(".json")[0] + ".trace", visualization.makeTrace(data[-1]["log"], path.split(".json")[0].split("/")[-1]), force=True)
         
-    except Exception as e:
-        print(f"Error reading file: {e}")
+    except Exception:
+        print(f"Error reading file: {traceback.format_exc()}")
 
 if __name__ == "__main__":
     main()

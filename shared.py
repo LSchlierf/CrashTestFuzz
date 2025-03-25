@@ -18,10 +18,12 @@ SYNC_METHOD = SYNC_METHODS[4]
 # CRASH INFORMATION #
 #####################
 
-FILE = "umbra.db.wal"
-OP = "fsync"
-TIMING = "after"
+FILE = ["umbra.db.wal"]
+OP = ["fsync"]
+TIMING = ["after"]
 STEPS = 20
+RECURSION_DEPTH = 2
+RECURSION_FACTOR = 2
 
 ##########################
 # WORKFLOW SPECIFICATION #

@@ -25,15 +25,17 @@ def main():
     p.add_argument("-u", "--until", help="End seed for the transaction traces (exclusive, default 10_000)", type=int)
     
     p.add_argument("-c", "--concurrent", help=f"Number of concurrent tests to run (default {shared.CONCURRENT_TESTS})", type=int)
-    p.add_argument("-s", "--steps", type=int)
     p.add_argument("-l", "--log", choices=["none", "retry", "failed", "all"], help="If specified, will generate a log for the respective transaction trace\n-> none:\tdon't log anything\n-> retry:\tretry failed traces with logging\n-> failed:\tlog everything, discard logs for successful traces\n-> all:\t\tlog all")
     
     p.add_argument("--verify", action="store_const", const=True, default=None, help="If specified, will verify the seed(s), running without injected hardware faults")
     p.add_argument("--sut", choices=os.listdir("SUT"), help="System Under Test")
-    p.add_argument("-w", "--walfile", help="The Write-ahead-log file to crash LazyFS by. Pass \"auto\" for automatic selection depending on the SUT.")
-    p.add_argument("-t", "--timing", help="The LazyFS crash timing")
-    p.add_argument("-o", "--operation", help="The LazyFS operation to crash upon", choices=["create", "open", "read", "write", "fsync", "getattr"])
+    p.add_argument("-w", "--walfile", action="append", help="The Write-ahead-log file to crash LazyFS by. Pass \"auto\" for automatic selection depending on the SUT. Can be passed multiple times for different recursion levels.")
+    p.add_argument("-t", "--timing", action="append", help="The LazyFS crash timing. Can be passed multiple times for different recursion levels.")
+    p.add_argument("-o", "--operation", action="append", help="The LazyFS operation to crash upon. Can be passed multiple times for different recursion levels.", choices=["create", "open", "read", "write", "fsync", "getattr"])
     p.add_argument("-m", "--sync-method", help="The WAL sync method to pass to the SUT", choices=shared.SYNC_METHODS)
+    p.add_argument("-s", "--steps", help="The amount of different hurdles to crash LazyFS at", type=int)
+    p.add_argument("-d", "--recursion-depth", help="The maximum recursion depth of crash/restart/verify", type=int)
+    p.add_argument("-q", "--recursion-factor", help="Steps is divided by this value at each recursion level, allowing for wider or narrower branching", type=float)
     p.add_argument("-k", "--checkpoint", help="If set to true, will checkpoint LazyFS after every finished transaction", action="store_const", const=True, default=None)
     
     p.add_argument("--num-transactions", type=int)
@@ -64,9 +66,11 @@ def main():
         n.until = 10_000
     if n.verbose == None:
         n.verbose = 0
-    if n.walfile == "auto":
+    if n.walfile is not None:
         if n.sut in WAL_FILES:
-            n.walfile = WAL_FILES[n.sut]
+            for i in range(len(n.walfile)):
+                if n.walfile[i] == "auto":
+                    n.walfile[i] = WAL_FILES[n.sut]
         else:
             p.print_usage()
             utils.error(f"No WAL-file specified for SUT {n.sut}. See README.md on how to fix this.")
@@ -88,7 +92,7 @@ def main():
             benchmark.verifySeedsThreaded(n.log, seeds=n.seed)
         else:
             utils.info(f"Running seed{'s' if len(n.seed) > 1 else ''}", *n.seed)
-            benchmark.runSeedsThreaded(n.log, seeds=n.seed)
+            benchmark.runSeeds(n.log, seeds=n.seed)
     elif getattr(n, "from") != None:
         print(n)
         if getattr(n, "from") >= n.until:
@@ -99,7 +103,7 @@ def main():
             benchmark.verifySeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
         else:
             utils.info("Running seeds", getattr(n, "from"), "through", n.until - 1)
-            benchmark.runSeedsThreaded(n.log, [i for i in range(getattr(n, "from"), n.until)])
+            benchmark.runSeeds(n.log, [i for i in range(getattr(n, "from"), n.until)])
     else:
         p.print_usage()
         print("Pass either a range of seeds using -f [--from] and -u [--until] or specify single seeds using -r [--randseed].")
@@ -122,15 +126,19 @@ def setSharedValues(n):
         shared.DEBUG_LEVEL = n.verbose
     if n.concurrent is not None:
         shared.CONCURRENT_TESTS = n.concurrent
+    
     if n.walfile is not None:
         shared.FILE = n.walfile
-    
     if n.operation is not None:
         shared.OP = n.operation
     if n.timing is not None:
         shared.TIMING = n.timing
     if n.steps is not None:
         shared.STEPS = n.steps
+    if n.recursion_depth is not None:
+        shared.RECURSION_DEPTH = n.recursion_depth
+    if n.recursion_factor is not None:
+        shared.RECURSION_FACTOR = n.recursion_factor
     if n.checkpoint is not None:
         shared.CHECKPOINT = n.checkpoint
     
