@@ -80,8 +80,8 @@ def main():
     
     assert shared.NUM_TRANSACTIONS > 0
     assert shared.P_COMMIT <= 1 and shared.P_COMMIT > 0
-    assert shared.P_INSERT > 0
-    assert shared.P_UPDATE > 0
+    assert shared.P_INSERT >= 0
+    assert shared.P_UPDATE >= 0
     assert (shared.P_INSERT + shared.P_UPDATE) <= 1
     assert shared.P_SERIALIZATION_FAILURE < 1 and shared.P_SERIALIZATION_FAILURE >= 0
     

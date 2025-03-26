@@ -14,10 +14,11 @@
   "sut": "umbra-assert",
   "sync_method": "fsync",
   "checkpoint": false,
-  "walfile": "umbra.db.wal",
+  "walfile": ["umbra.db.wal"],
   "concurrent": 10,
-  "log": "none",
-  "steps": 200,
-  "operation": "fsync",
-  "timing": "before"
+  "log": "all",
+  "steps": 10,
+  "recursion_depth": 0,
+  "operation": ["fsync"],
+  "timing": ["before"]
 }

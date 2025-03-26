@@ -6,8 +6,12 @@ from utils import debug, getFormattedTimestamp, traceHash
 successfulText = "<span style=\"color: green\">successful</span>"
 unsuccessfulText = "<span style=\"color: red\">not successful</span>"
 
-def makeHTMLPage(data, containerId):
-    debug("generating HTML report for id", containerId, level=2)
+######################
+# HTML Visualization #
+######################
+
+def makeHTMLPage(data, containerId, wide=True):
+    debug("generating", ("wide" if wide else "slim"), "HTML report for id", containerId, level=2)
     
     # header, styling and metadata
     
@@ -79,6 +83,13 @@ td {{
     padding: 0 10px;
     max-width: 30vw;
 }}
+.slimLogs {{
+    max-width: 80vw;
+    font-family: monospace;
+    overflow: scroll;
+    text-align: left;
+    padding: 20px 10px
+}}
 details {{
     font-family: monospace;
     overflow: scroll;
@@ -92,7 +103,7 @@ details > summary {{
     border: 2px solid black;
 }}
 .open {{
-    border: 3px solid gray;
+    border: 3px solid blue;
 }}
 .open + .openConnLine {{
     height: 50%;
@@ -114,43 +125,39 @@ details > summary {{
     overflow-wrap: anywhere;
     white-space: normal;
 }}
-#metadata {{
-    padding-bottom: 30px;
-}}
 </style></head><body><div id="metadata">
 <b>Transaction log for {containerId}</b><br/>
 Generated {getFormattedTimestamp()}<br/><br/>
 <b>Workload information</b><br/>
 System under test (SUT): {shared.SUT}<br/>"""
 
+    if "metadata" in data[0]:
+        page += f"""
+Seed: {str(data[0]["metadata"]["seed"])} {"(given)" if data[0]["metadata"]["seedGiven"] else "(generated)"}<br/>
+Transactions: {data[0]["metadata"]["transactions"]}<br/>
+Concurrent connections: {data[0]["metadata"]["concurrentConnections"]["avg"]} (avg) | {data[0]["metadata"]["concurrentConnections"]["var"]} (var)<br/>
+Transaction size: {data[0]["metadata"]["transactionSize"]["avg"]} (avg) | {data[0]["metadata"]["transactionSize"]["var"]} (var)<br/>
+Statement size: {data[0]["metadata"]["statementSize"]["avg"]} (avg) | {data[0]["metadata"]["statementSize"]["var"]} (var)<br/>
+Probability for Commit: {data[0]["metadata"]["pCommit"]}<br/>
+Probability for Rollback: {data[0]["metadata"]["pRollback"]}<br/>
+Probability for Insert: {data[0]["metadata"]["pInsert"]}<br/>
+Probability for Update: {data[0]["metadata"]["pUpdate"]}<br/>
+Probability for Delete: {data[0]["metadata"]["pDelete"]}<br/>
+Probability for Serialization Failure: {data[0]["metadata"]["pSerializationFailure"]}</div>"""
+
     for item in data:
-        page += singleItem(item)
+        page += singleItem(item, wide)
     
     # table footer, page end
     
     page += """</body></html>"""
     return page
 
-def singleItem(data):
+def singleItem(data, wide):
     if "metadata" in data:
         log = data["log"]
         metadata = data["metadata"]
-        block = ""
-        if metadata["testMetadata"]["depth"] == 0:
-            block += f"""
-Seed: {str(metadata["seed"])} {"(given)" if metadata["seedGiven"] else "(generated)"}<br/>
-Transactions: {metadata["transactions"]}<br/>
-Concurrent connections: {metadata["concurrentConnections"]["avg"]} (avg) | {metadata["concurrentConnections"]["var"]} (var)<br/>
-Transaction size: {metadata["transactionSize"]["avg"]} (avg) | {metadata["transactionSize"]["var"]} (var)<br/>
-Statement size: {metadata["statementSize"]["avg"]} (avg) | {metadata["statementSize"]["var"]} (var)<br/>
-Probability for Commit: {metadata["pCommit"]}<br/>
-Probability for Rollback: {metadata["pRollback"]}<br/>
-Probability for Insert: {metadata["pInsert"]}<br/>
-Probability for Update: {metadata["pUpdate"]}<br/>
-Probability for Delete: {metadata["pDelete"]}<br/>
-Probability for Serialization Failure: {metadata["pSerializationFailure"]}<br/>"""
-
-        block += f"""<br/><br/>{testMetadata(metadata)}
+        return f"""<div><br/><br/>{testMetadata(metadata)}
 <b>Trace information</b><br/>
 Number of INSERTs: {metadata["numInsert"]}<br/>
 Number of UPDATEs: {metadata["numUpdate"]} | of which produced concurrency conflict: {metadata["numCCUpdate"]} ({round(metadata["numCCUpdate"] / metadata["numUpdate"] * 100, 1) if metadata["numUpdate"] != 0 else "0"}%) (Target: {round(metadata["pSerializationFailure"] * 100, 1)}%)<br/>
@@ -160,37 +167,39 @@ Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] /
 Trace hash: <b>{traceHash(log)}</b><br/>
 Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/><br/>
 <details><summary>Initial log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details>
-{restartLog(metadata)}
-</div><table><thead><tr><td></td>"""
-    
-        # table header
-    
-        for i in range(metadata["transactions"]):
-            block += f"<td>{i}</td>"
+{additionalLog(metadata)}<br/></div>{wideTable(metadata, log) if wide else slimTable(log)}<br/><br/>"""
 
-        block += """<td class="farRight">logs</td></tr></thead><tbody>"""
-
-        # table rows
-
-        openConns = []
-
-        for event in itertools.batched(log, 2):
-            if len(event) == 2:
-                (info, _) = event
-                if info["type"] == "open":
-                    openConns.append(info["transaction"])
-                elif info["type"] == "commit" or info["type"] == "rollback":
-                    openConns.remove(info["transaction"])
-            block += singleLine(event, metadata, openConns)
-        
-        block += "</tbody></table><br/><br/>"
-    
-        return block
-    
     else:
-        return f"""<br/><br/>{testMetadata(data)}{restartLog(data["testMetadata"])}"""
+        return f"""<br/><br/>{testMetadata(data)}{additionalLog(data["testMetadata"], "startupLog")}<br/>{additionalLog(data["testMetadata"])}<br/>"""
 
-def singleLine(batch, metadata, openConns):
+def wideTable(metadata, log):
+    # table header
+    
+    table = "<table><thead><tr><td></td>"
+    
+    for i in range(metadata["transactions"]):
+        table += f"<td>{i}</td>"
+
+    table += """<td class="farRight">logs</td></tr></thead><tbody>"""
+
+    # table rows
+
+    openConns = []
+
+    for event in itertools.batched(log, 2):
+        if len(event) == 2:
+            (info, _) = event
+            if info["type"] == "open":
+                openConns.append(info["transaction"])
+            elif info["type"] == "commit" or info["type"] == "rollback":
+                openConns.remove(info["transaction"])
+        table += singleWideLine(event, metadata, openConns)
+    
+    table += "</tbody></table>"
+    
+    return table
+
+def singleWideLine(batch, metadata, openConns):
     if len(batch) == 2:
         (event, status) = batch
     else:
@@ -218,18 +227,7 @@ def singleLine(batch, metadata, openConns):
     
     # current statement
     
-    if event["type"] == "open":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} open">BEGIN<br/>Transaction {event["transaction"]}<br/>{event["numStatements"]} statements{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div><div class="openConnLine"></div></td>"""
-    elif event["type"] == "insert":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} insert">INSERT {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div><div class="openConnLine"></div></td>"""
-    elif event["type"] == "update":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} update">UPDATE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div><div class="openConnLine"></div></td>"""
-    elif event["type"] == "delete":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} delete">DELETE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div><div class="openConnLine"></div></td>"""
-    elif event["type"] == "commit":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} commit">Transaction {event["transaction"]}<br/>COMMIT{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div><div class="openConnLine"></div></td>"""
-    elif event["type"] == "rollback":
-        line += f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} rollback">Transaction {event["transaction"]}<br/>ROLLBACK{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div><div class="openConnLine"></div></td>"""
+    line += statementItem(event, status)
     
     # open transaction lines
     
@@ -252,9 +250,64 @@ def singleLine(batch, metadata, openConns):
     else:
         line += "0 lines"
     
-    line += "</td>"
+    line += "</td></tr>"
     
     return line
+
+def slimTable(log):
+    table = "<table><thead><tr><td></td><td>Transaction item</td><td>logs</td></tr></thead>"
+    
+    for event in itertools.batched(log, 2):
+        table += singleSlimLine(event)
+    
+    table += "</tbody></table>"
+    
+    return table
+
+def singleSlimLine(batch):
+    if len(batch) == 2:
+        (event, status) = batch
+    else:
+        (event,) = batch
+        status = {"result": "failure", "logs": []}
+    
+    line = "<tr>"
+    
+    if event["type"] in ["insert", "update", "delete"]:
+        line += f"""<td class="eventNumber farLeft">{event["statement"]}"""
+    else:
+        line += """<td class="farLeft"></td>"""
+    
+    line += statementItem(event, status, nums=True)
+    
+    line += """<td><div class="slimLogs">"""
+    
+    if len(status["logs"]) > 0:
+        line += "<br/>".join(status["logs"])
+    else:
+        line += "0 lines"
+    
+    line += "</div></td></tr>"
+    
+    line += "</tr>"
+    return line
+
+def statementItem(event, status, nums=False):
+    
+    if event["type"] == "open":
+        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} open">Transaction {event["transaction"]}<br/>BEGIN<br/>{event["numStatements"]} statements{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
+    elif event["type"] == "insert":
+        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} insert">{"Transaction " + str(event["transaction"]) + "<br/>" if nums else ""}INSERT {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
+    elif event["type"] == "update":
+        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} update">{"Transaction " + str(event["transaction"]) + "<br/>" if nums else ""}UPDATE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
+    elif event["type"] == "delete":
+        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} delete">{"Transaction " + str(event["transaction"]) + "<br/>" if nums else ""}DELETE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
+    elif event["type"] == "commit":
+        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} commit">Transaction {event["transaction"]}<br/>COMMIT{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
+    elif event["type"] == "rollback":
+        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} rollback">Transaction {event["transaction"]}<br/>ROLLBACK{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
+    
+    return """<td class="tableInner>UNKNOWN EVENT</td>"""
 
 def testMetadata(metadata):
     if not "testMetadata" in metadata:
@@ -266,10 +319,10 @@ def testMetadata(metadata):
     
     if d["result"].startswith("correct-content"):
         result = f"""<span style="color: green">correct content after restart{d["result"][15:]}</span>"""
-    elif d["result"].startswith("incorrect-content"):
-        result = f"""<span style="color: red">incorrect content after restart{d["result"][17:]}</span>"""
     elif d["result"] == "correct-parent-content":
         result = """<span style="color: green">correct (unchanged) content after crash during restart</span>"""
+    elif d["result"].startswith("incorrect-content"):
+        result = f"""<span style="color: red">incorrect content after restart{d["result"][17:]}</span>"""
     elif d["result"] == "no-restart":
         result = """<span style="color: orange">container didn't restart</span>"""
     elif d["result"] == "error":
@@ -284,13 +337,19 @@ Operation: {d["operation"]}<br/>
 Occurrence: {d["hurdle"]}<br/>
 Result: {result}<br/><br/>"""
 
-def restartLog(metadata):
-    if not "restartLog" in metadata or len(metadata["restartLog"]) == 0:
+def additionalLog(metadata, key="restartLog"):
+    if not key in metadata or len(metadata[key]) == 0:
         return ""
     
-    return f"""<details><summary>Restart log ({len(metadata["restartLog"])} line{"" if len(metadata["restartLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["restartLog"])}</details>"""
+    return f"""<details><summary>{key} ({len(metadata[key])} line{"" if len(metadata[key]) == 1 else "s"})</summary>{"<br/>".join(metadata[key])}</details>"""
+
+#######################
+# TRACE Visualization #
+#######################
 
 def makeTrace(log, containerId):
+    # format docs: https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit?pli=1&tab=t.0#heading=h.yr4qxyxotyw
+    # view with https://ui.perfetto.dev -> "open trace file"
     debug("generating TRACE report for id", containerId, level=2)
     events = []
     

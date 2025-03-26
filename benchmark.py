@@ -121,10 +121,10 @@ def runSeeds(makeLog, seeds):
             os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
         dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testfiles-{duplicateID}.json", json.dumps({"parent": parentID, "fileOps": files}, indent=4), force=True)
 
-        maxOps = 0
-        for item in files:
-            if shared.FILE[0] in item and shared.OP[0] in files[item]:
-                maxOps = max(maxOps, files[item][shared.OP[0]])
+        if shared.STEPS == 0:
+            continue
+        
+        maxOps = files[shared.FILE[0]][shared.OP[0]] if shared.FILE[0] in files and shared.OP[0] in files[shared.FILE[0]] else 0
 
         stepSize = max(int(maxOps / shared.STEPS), 1)
 
@@ -140,7 +140,7 @@ def runSeeds(makeLog, seeds):
         threads = []
         
         # this is fine, this thread is the only consumer + any thread that enqueues new ones does so before terminating
-        while not q.qsize() == 0:
+        while q.qsize() > 0:
             
             for _ in range(shared.CONCURRENT_TESTS):
                 if q.qsize() == 0:
@@ -212,6 +212,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
         results[childID] = testMetadata
         stopContainer(childID, supressErrors=True)
         if makeLog in ["all", "failed"]:
+            addLog(testMetadata, childID, "startupLog")
             copyLogs(seed, childID, depth)
         content = parentContent
     
@@ -244,7 +245,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     if startup:
 
         if not waitUntilAvailable(duplicateID, port, 90):
-            info("container didn't restart")
+            info("container didn't restart, early return")
             del metadata["oldSnapshots"]
             if "altContent" in metadata:
                 del metadata["altContent"]
@@ -253,7 +254,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
             results[duplicateID] = testMetadata
             if makeLog in ["all", "failed"]:
                 stopContainer(duplicateID, supressErrors=True)
-                addRestartLog(metadata, duplicateID)
+                addLog(metadata, duplicateID)
                 logAll(seed, duplicateID, metadata, log, depth, parentID)
             cleanupContainer(duplicateID)
             cleanupContainer(childID)
@@ -269,7 +270,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
             results[duplicateID] = testMetadata
             stopContainer(duplicateID, supressErrors=True)
             if makeLog == "all":
-                addRestartLog(metadata, duplicateID)
+                addLog(metadata, duplicateID)
                 logAll(seed, duplicateID, metadata, log, depth, parentID)
 
         elif "altContent" in metadata and verify(shared.DB_TABLENAME, metadata["altContent"], port, supressErrors=True):
@@ -282,7 +283,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
             results[duplicateID] = testMetadata
             stopContainer(duplicateID, supressErrors=True)
             if makeLog == "all":
-                addRestartLog(metadata, duplicateID)
+                addLog(metadata, duplicateID)
                 logAll(seed, duplicateID, metadata, log, depth, parentID)  
 
         else:
@@ -304,11 +305,11 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
                 results[duplicateID] = testMetadata
                 stopContainer(duplicateID, supressErrors=True)
                 if makeLog in ["all", "failed"]:
-                    addRestartLog(metadata, duplicateID)
+                    addLog(metadata, duplicateID)
                     logAll(seed, duplicateID, metadata, log, depth, parentID)
 
             else:
-                info("incorrect content")
+                info("incorrect content, early return")
                 testMetadata["result"] = "incorrect-content"
                 actual = dump(shared.DB_TABLENAME, port)
                 mismatch = list(set(content) ^ set(actual))
@@ -320,7 +321,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
                 results[duplicateID] = testMetadata
                 stopContainer(duplicateID, supressErrors=True)
                 if makeLog in ["all", "failed"]:
-                    addRestartLog(metadata, duplicateID)
+                    addLog(metadata, duplicateID)
                     logAll(seed, duplicateID, metadata, log, depth, parentID)
                 cleanupContainer(duplicateID)
                 cleanupContainer(childID)
@@ -329,13 +330,13 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     else:
         
         if not waitUntilAvailable(duplicateID, port, 90):
-            info("container didn't restart")
+            info("container didn't restart, early return")
             testMetadata["result"] = "no-restart"
             results[duplicateID] = testMetadata
             stopContainer(duplicateID, supressErrors=True)
             if makeLog in ["all", "failed"]:
                 copyLogs(seed, duplicateID, depth)
-                addRestartLog(testMetadata, duplicateID)
+                addLog(testMetadata, duplicateID)
                 dumpTestMetadata(seed, duplicateID, testMetadata, parentID)
             cleanupContainer(duplicateID)
             cleanupContainer(childID)
@@ -348,11 +349,11 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
             stopContainer(duplicateID, supressErrors=True)
             if makeLog == "all":
                 copyLogs(seed, duplicateID, depth)
-                addRestartLog(testMetadata, duplicateID)
+                addLog(testMetadata, duplicateID)
                 dumpTestMetadata(seed, duplicateID, testMetadata, parentID)
             
         else:
-            info("incorrect parent content")
+            info("incorrect parent content, early return")
             testMetadata["result"] = "incorrect-parent-content"
             actual = dump(shared.DB_TABLENAME, port)
             mismatch = list(set(content) ^ set(actual))
@@ -361,14 +362,14 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
             stopContainer(duplicateID, supressErrors=True)
             if makeLog in ["all", "failed"]:
                 copyLogs(seed, duplicateID, depth)
-                addRestartLog(testMetadata, duplicateID)
+                addLog(testMetadata, duplicateID)
                 dumpTestMetadata(seed, duplicateID, testMetadata, parentID)
             cleanupContainer(duplicateID)
             cleanupContainer(childID)
             return
     
     if remainingDepth == 0:
-        info("recursion floor reached")
+        debug("recursion floor reached", level=1)
         cleanupContainer(childID)
         cleanupContainer(duplicateID)
         return
@@ -383,11 +384,8 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
 
     newFile = shared.FILE[depth + 1] if len(shared.FILE) > depth + 1 else shared.FILE[-1]
     newOp = shared.OP[depth + 1] if len(shared.OP) > depth + 1 else shared.OP[-1]
-
-    maxOps = 0
-    for item in files:
-        if newFile in item and newOp in files[item]:
-            maxOps = max(maxOps, files[item][newOp])
+    
+    maxOps = files[newFile][newOp] if newFile in files and newOp in files[newFile] else 0
 
     stepSize = max(int(maxOps / steps), 1)
 
@@ -396,6 +394,8 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     hurdles = [(i+1) * stepSize for i in range(steps)]
 
     debug(len(hurdles), "hurdles:", hurdles, level=3)
+    
+    debug("enqueuing", steps, "child threads", level=1)
     
     for (index, h) in enumerate(hurdles):
         q.put(Thread(target=runIteration, args=(duplicateID, childID, content, batch, f"{number}.{index}", seed, h, makeLog, remainingDepth - 1, max(int(steps / shared.RECURSION_FACTOR), 1))))

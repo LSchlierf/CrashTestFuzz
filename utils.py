@@ -44,7 +44,7 @@ def info(*msg):
 # WORKLOAD UTILS #
 ##################
 
-def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbContent = []):
+def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbContent=[]):
     """runs a workload on a given postgres port
     
     Arguments:
@@ -234,8 +234,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                 except (psycopg2.errors.SerializationFailure, psycopg2.errors.LockNotAvailable):
                     
                     if not expectCC:
-                        if verification:
-                            error("Didn't expect concurrency conflict")
+                        # if verification:
+                        error("Didn't expect concurrency conflict")
                         if makeLog:
                             log.append({"result": "failure", "logs": [], "details": "didn't expect concurrency conflict"})
                         return (dbContent, metadata, log)
@@ -311,8 +311,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                 except (psycopg2.errors.SerializationFailure, psycopg2.errors.LockNotAvailable):
                     
                     if not expectCC:
-                        if verification:
-                            error("Didn't expect concurrency conflict")
+                        # if verification:
+                        error("Didn't expect concurrency conflict")
                         if makeLog:
                             log.append({"result": "failure", "logs": [], "details": "didn't expect concurrency conflict"})
                         return (dbContent, metadata, log)
@@ -507,18 +507,18 @@ def mergeLogs(metadata, log, containerID):
             else:
                 target.append(f"[{shared.SUT}] {sutlogs.pop(0)}")
 
-def addRestartLog(metadata, containerID):
+def addLog(metadata, containerID, dest="restartLog"):
     lazyfslogs = [line for line in readLogs(containerID, "lazyfs") if not "lfs_getattr(" in line]
     sutlogs = readLogs(containerID, shared.SUT)
     
-    if not "restartLog" in metadata:
-        metadata["restartLog"] = []
+    if not dest in metadata:
+        metadata[dest] = []
     
     while len(lazyfslogs) > 0 or len(sutlogs) > 0:
         if len(sutlogs) == 0 or (len(lazyfslogs) > 0 and lazyfsTimestamp(lazyfslogs[0]) < SUTTimestamp(sutlogs[0])):
-            metadata["restartLog"].append(f"[lazyfs] {lazyfslogs.pop(0)}")
+            metadata[dest].append(f"[lazyfs] {lazyfslogs.pop(0)}")
         else:
-            metadata["restartLog"].append(f"[{shared.SUT}] {sutlogs.pop(0)}")
+            metadata[dest].append(f"[{shared.SUT}] {sutlogs.pop(0)}")
 
 #####################
 # SQL CONTROL UTILS #
@@ -544,6 +544,7 @@ class apiConnection:
     def rollback(self):
         requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "ROLLBACK;"})
         requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "BEGIN;"})
+        requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": f"SELECT * FROM {shared.DB_TABLENAME};"})
 
     def close(self):
         requests.post(f"http://127.0.0.1:{self._port}/close", json={"connID": self._connID})
@@ -552,6 +553,12 @@ class apiCursor:
     def __init__(self, connection):
         self._conn = connection
         self.rowcount = 0
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        pass
 
     def execute(self, stmt):
         result = requests.post(f"http://127.0.0.1:{self._conn._port}/sql", json={"connID": self._conn._connID, "query": stmt}).json()["status"]
@@ -562,9 +569,12 @@ class apiCursor:
     def fetchall(self):
         return [tuple(v) for v in requests.post(f"http://127.0.0.1:{self._conn._port}/fetchall", json={"connID": self._conn._connID}).json()["result"]]
 
-def connect(port):
+def connect(port, creation=False):
     if shared.SUT in ["duckdb", "sqlite"]:
         conn = apiConnection(port)
+        if not creation:
+            with conn.cursor() as c:
+                c.execute(f"SELECT * FROM {shared.DB_TABLENAME};")
     elif shared.SUT == "postgres":
         conn = psycopg2.connect(user="postgres", host="localhost", port=port)
         conn.set_session(isolation_level="REPEATABLE READ")
@@ -578,7 +588,7 @@ def connect(port):
 
 def create(name, schema, port):
     debug("creating db", level=2)
-    with connect(port) as conn:
+    with connect(port, creation=True) as conn:
         cur = conn.cursor()
         cur.execute("DROP TABLE IF EXISTS " + name + ";")
         cur.execute("CREATE TABLE " + name + " (" + ", ".join([s[0] + " " + s[1] for s in schema]) + ");")

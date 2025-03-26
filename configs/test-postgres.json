@@ -14,10 +14,11 @@
   "sut": "postgres",
   "sync_method": "none",
   "checkpoint": false,
-  "walfile": "pg_wal/000000010000000000000001",
+  "walfile": ["pg_wal/000000010000000000000001"],
   "concurrent": 10,
-  "log": "none",
+  "log": "all",
   "steps": 200,
-  "operation": "fsync",
-  "timing": "before"
+  "recursion_depth": 0,
+  "operation": ["fsync"],
+  "timing": ["before"]
 }

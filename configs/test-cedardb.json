@@ -14,10 +14,11 @@
   "sut": "cedardb",
   "sync_method": "fsync",
   "checkpoint": false,
-  "walfile": "database/db.wal",
+  "walfile": ["database/db.wal"],
   "concurrent": 10,
   "log": "all",
   "steps": 200,
-  "operation": "fsync",
-  "timing": "before"
+  "recursion_depth": 0,
+  "operation": ["fsync"],
+  "timing": ["before"]
 }

@@ -13,10 +13,11 @@
   "verify": false,
   "sut": "sqlite",
   "checkpoint": false,
-  "walfile": "sqlite.db-journal",
+  "walfile": ["sqlite.db-journal"],
   "concurrent": 10,
   "log": "all",
   "steps": 200,
-  "operation": "fsync",
-  "timing": "before"
+  "recursion_depth": 0,
+  "operation": ["fsync"],
+  "timing": ["before"]
 }
