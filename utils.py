@@ -234,7 +234,6 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                 except (psycopg2.errors.SerializationFailure, psycopg2.errors.LockNotAvailable):
                     
                     if not expectCC:
-                        # if verification:
                         error("Didn't expect concurrency conflict")
                         if makeLog:
                             log.append({"result": "failure", "logs": [], "details": "didn't expect concurrency conflict"})
@@ -311,7 +310,6 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                 except (psycopg2.errors.SerializationFailure, psycopg2.errors.LockNotAvailable):
                     
                     if not expectCC:
-                        # if verification:
                         error("Didn't expect concurrency conflict")
                         if makeLog:
                             log.append({"result": "failure", "logs": [], "details": "didn't expect concurrency conflict"})
