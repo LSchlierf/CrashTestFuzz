@@ -537,15 +537,18 @@ class apiConnection:
         return apiCursor(self)
 
     def commit(self):
-        requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "COMMIT;"})
+        result = requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "COMMIT;"}).json()["status"]
+        assert result == "success"
 
     def rollback(self):
         requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "ROLLBACK;"})
         requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "BEGIN;"})
-        requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": f"SELECT * FROM {shared.DB_TABLENAME};"})
+        result = requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": f"SELECT * FROM {shared.DB_TABLENAME};"}).json()["status"]
+        assert result == "success"
 
     def close(self):
-        requests.post(f"http://127.0.0.1:{self._port}/close", json={"connID": self._connID})
+        result = requests.post(f"http://127.0.0.1:{self._port}/close", json={"connID": self._connID}).json()["status"]
+        assert result == "success"
 
 class apiCursor:
     def __init__(self, connection):
