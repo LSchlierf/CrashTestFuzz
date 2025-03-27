@@ -28,8 +28,10 @@ Use ```main.py -h``` for detailed description of the arguments.
 
 ### Verification
 
+Example for postgres:
+
 ```sh
-./main.py -x configs/verify-generic.json --sut postgres -r 0
+./main.py -x demo-configs/verify-generic.json --sut postgres -r 0
 ```
 
 ### Testing a DBMS
@@ -37,7 +39,7 @@ Use ```main.py -h``` for detailed description of the arguments.
 Example for postgres:
 
 ```sh
-./main.py -x demo-configs/verify-generic.json --sut postgres -r 0
+./main.py -x demo-configs/test-generic.json --sut postgres -r 0
 ```
 
 See the `demo-configs` folder for more examples.
