@@ -37,10 +37,10 @@ Use ```main.py -h``` for detailed description of the arguments.
 Example for postgres:
 
 ```sh
-./main.py -x configs/test-postgres.json -r 0
+./main.py -x demo-configs/verify-generic.json --sut postgres -r 0
 ```
 
-See the `configs` folder for more examples.
+See the `demo-configs` folder for more examples.
 
 ### Exporting test results
 

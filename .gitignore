@@ -11,5 +11,4 @@ logs
 SUT/*/container
 
 # configs
-configs/trial*
-configs/demo*
+configs
