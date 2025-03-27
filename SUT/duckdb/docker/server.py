@@ -24,6 +24,7 @@ def openConn():
     log("opening new connection", connID)
     conns[connID] = duckdb.connect(f"{DB_DIR}/duck.db", read_only=False)
     conns[connID].begin()
+    conns[connID].execute("SET immediate_transaction_mode = true;")
     return {"connID": connID}
 
 @app.post("/sql")

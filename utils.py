@@ -542,9 +542,8 @@ class apiConnection:
 
     def rollback(self):
         requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "ROLLBACK;"})
-        requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": "BEGIN;"})
-        result = requests.post(f"http://127.0.0.1:{self._port}/sql", json={"connID": self._connID, "query": f"SELECT * FROM {shared.DB_TABLENAME};"}).json()["status"]
-        assert result == "success"
+        self.close()
+        self._connID = requests.post(f"http://127.0.0.1:{self._port}/open").json()["connID"]
 
     def close(self):
         result = requests.post(f"http://127.0.0.1:{self._port}/close", json={"connID": self._connID}).json()["status"]
@@ -570,12 +569,9 @@ class apiCursor:
     def fetchall(self):
         return [tuple(v) for v in requests.post(f"http://127.0.0.1:{self._conn._port}/fetchall", json={"connID": self._conn._connID}).json()["result"]]
 
-def connect(port, creation=False):
+def connect(port):
     if shared.SUT in ["duckdb", "sqlite"]:
         conn = apiConnection(port)
-        if not creation:
-            with conn.cursor() as c:
-                c.execute(f"SELECT * FROM {shared.DB_TABLENAME};")
     elif shared.SUT == "postgres":
         conn = psycopg2.connect(user="postgres", host="localhost", port=port)
         conn.set_session(isolation_level="REPEATABLE READ")
@@ -589,7 +585,7 @@ def connect(port, creation=False):
 
 def create(name, schema, port):
     debug("creating db", level=2)
-    with connect(port, creation=True) as conn:
+    with connect(port) as conn:
         cur = conn.cursor()
         cur.execute("DROP TABLE IF EXISTS " + name + ";")
         cur.execute("CREATE TABLE " + name + " (" + ", ".join([s[0] + " " + s[1] for s in schema]) + ");")
