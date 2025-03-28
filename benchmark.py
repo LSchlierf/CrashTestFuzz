@@ -135,7 +135,7 @@ def runSeeds(makeLog, seeds):
         debug(len(hurdles), "hurdles:", hurdles, level=3)
         
         for (index, hurdle) in enumerate(hurdles):
-            q.put(Thread(target=runIteration, args=(duplicateID, parentID, [], batch, str(index), seed, hurdle, makeLog, shared.RECURSION_DEPTH, shared.STEPS)))
+            q.put(Thread(target=runIteration, args=(duplicateID, parentID, [], batch, str(index), seed, hurdle, makeLog, max(int(shared.RECURSION_DEPTH), 0), max(int(shared.STEPS), 1))))
         
         threads = []
         
@@ -398,7 +398,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     debug("enqueuing", steps, "child threads", level=1)
     
     for (index, h) in enumerate(hurdles):
-        q.put(Thread(target=runIteration, args=(duplicateID, childID, content, batch, f"{number}.{index}", seed, h, makeLog, remainingDepth - 1, max(int(steps / shared.RECURSION_FACTOR), 1))))
+        q.put(Thread(target=runIteration, args=(duplicateID, childID, content, batch, f"{number}.{index}", seed, h, makeLog, remainingDepth - 1, max(int(steps * shared.RECURSION_FACTOR), 1))))
 
 #####################
 # SEED VERIFICATION #

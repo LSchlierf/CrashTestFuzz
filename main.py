@@ -35,7 +35,7 @@ def main():
     p.add_argument("-m", "--sync-method", help="The WAL sync method to pass to the SUT", choices=shared.SYNC_METHODS)
     p.add_argument("-s", "--steps", help="The amount of different hurdles to crash LazyFS at", type=int)
     p.add_argument("-d", "--recursion-depth", help="The maximum recursion depth of crash/restart/verify", type=int)
-    p.add_argument("-q", "--recursion-factor", help="Steps is divided by this value at each recursion level, allowing for wider or narrower branching", type=float)
+    p.add_argument("-q", "--recursion-factor", help="Steps is multiplied by this value at each recursion level, allowing for wider or narrower branching", type=float)
     p.add_argument("-k", "--checkpoint", help="If set to true, will checkpoint LazyFS after every finished transaction", action="store_const", const=True, default=None)
     
     p.add_argument("--num-transactions", type=int)

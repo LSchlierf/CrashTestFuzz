@@ -23,7 +23,7 @@ OP = ["fsync"]
 TIMING = ["after"]
 STEPS = 20
 RECURSION_DEPTH = 2
-RECURSION_FACTOR = 2
+RECURSION_FACTOR = 1
 
 ##########################
 # WORKFLOW SPECIFICATION #
