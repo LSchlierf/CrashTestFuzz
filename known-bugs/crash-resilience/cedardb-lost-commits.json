@@ -18,7 +18,7 @@
   ],
   "concurrent": 10,
   "log": "all",
-  "steps": 80,
+  "steps": 10,
   "operation": [
     "fsync"
   ],
