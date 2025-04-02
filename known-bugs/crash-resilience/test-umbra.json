@@ -1,0 +1,36 @@
+{
+  "num_transactions": 20,
+  "concurrent_transactions_avg": 5.0,
+  "concurrent_transactions_var": 1.0,
+  "transaction_size_avg": 5.0,
+  "transaction_size_var": 1.0,
+  "statement_size_avg": 1.0,
+  "statement_size_var": 0,
+  "p_commit": 0.8,
+  "p_insert": 0.7,
+  "p_update": 0.2,
+  "p_serialization_failure": 0.01,
+  "verify": false,
+  "concurrent": 10,
+  "log": "all",
+  "sync_method": "fsync",
+  "checkpoint": false,
+  "walfile": [
+    "auto"
+  ],
+  "steps": 10,
+  "operation": [
+    "fsync",
+    "write"
+  ],
+  "timing": [
+    "before",
+    "after"
+  ],
+  "recursion_depth": 1,
+  "recursion_factor": 1,
+  "sut": "umbra",
+  "seed": [
+    0
+  ]
+}
