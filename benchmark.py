@@ -306,14 +306,16 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
                 cleanupContainer(verificationDuplicateID)
 
             else:
-                info("incorrect content, early return")
-                testMetadata["result"] = "incorrect-content"
-                actual = dump(shared.DB_TABLENAME, port)
-                mismatch = list(set(content) ^ set(actual))
-                testMetadata["details"] = {"expected": content, "actual": actual, "mismatch": mismatch}
-                del metadata["oldSnapshots"]
-                if "altContent" in metadata:
-                    del metadata["altContent"]
+                try:
+                    actual = dump(shared.DB_TABLENAME, port)
+                    mismatch = list(set(content) ^ set(actual))
+                    info("incorrect content, early return")
+                    testMetadata["result"] = "incorrect-content"
+                    testMetadata["details"] = {"expected": content, "actual": actual, "mismatch": mismatch}
+                except Exception as e:
+                    error(type(e), "Exception during dump:", str(e))
+                    testMetadata["result"] = "error"
+                    testMetadata["details"] = str(e)
                 metadata["testMetadata"] = testMetadata
                 results[verificationDuplicateID] = testMetadata
                 stopContainer(verificationDuplicateID, supressErrors=True)

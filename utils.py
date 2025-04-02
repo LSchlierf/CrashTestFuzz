@@ -11,6 +11,7 @@ import subprocess
 import sys
 from threading import local
 import time
+import traceback
 import uuid
 
 ####################
@@ -581,6 +582,9 @@ def connect(port):
         conn = psycopg2.connect(database="postgres", user="postgres", password="postgres", host="localhost", port=port)
         with conn.cursor() as c:
             c.execute(f"SELECT 0;") # used as BEGIN;
+    if shared.SUT == "cedardb":
+        with conn.cursor() as c:
+            c.execute("SET async_commit = off;")
     return conn
 
 def create(name, schema, port):
@@ -641,7 +645,12 @@ def dump(name, port):
 
 def verify(name, content, port, kill=False, supressErrors=False):
     debug("verifying", name, level=2)
-    data = dump(name, port)
+    try:
+        data = dump(name, port)
+    except Exception as e:
+        if not supressErrors:
+            error(type(e), "exception occurrec during dump:", traceback.format_exc())
+        return False
     content = set(str(c) for c in content)
     data = set(str(c) for c in data)
     cross = data ^ content
