@@ -11,7 +11,7 @@ Filesystem failures are simulated using [LazyFS](https://www.github.com/dsrhasla
 ```sh
 sudo apt update && sudo apt install python3 python3-dev libpq-dev
 
-pip install psycopg2
+pip install psycopg2 requests
 ```
 
 Also make sure your local user can issue [docker](https://docs.docker.com/engine/install/) commands.
