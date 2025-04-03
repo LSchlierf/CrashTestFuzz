@@ -42,6 +42,7 @@ ENV HOST_GID=${HOST_GID}
 ENV HOST_UID=${HOST_UID}
 ENV WAL_SYNC_METHOD=${WAL_SYNC_METHOD}
 ENV CEDAR_PASSWORD=postgres
+ENV ASYNCCOMMITS=off
 
 # if user with HOST_UID exists, change name to "local" else create with name "local"
 RUN if [ $(getent passwd ${HOST_UID}) ]; then LOCALNAME=$(getent passwd ${HOST_UID} | cut -f 1 -d ":") && usermod -l local ${LOCALNAME} && groupmod -n local ${LOCALNAME} ; else groupadd --gid ${HOST_GID} local && useradd --uid ${HOST_UID} --gid ${HOST_GID} local ; fi

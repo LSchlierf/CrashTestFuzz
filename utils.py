@@ -582,9 +582,6 @@ def connect(port):
         conn = psycopg2.connect(database="postgres", user="postgres", password="postgres", host="localhost", port=port)
         with conn.cursor() as c:
             c.execute(f"SELECT 0;") # used as BEGIN;
-    if shared.SUT == "cedardb":
-        with conn.cursor() as c:
-            c.execute("SET async_commit = off;")
     return conn
 
 def create(name, schema, port):
