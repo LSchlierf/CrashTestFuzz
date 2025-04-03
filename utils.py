@@ -7,6 +7,7 @@ import psycopg2
 import random
 import requests
 import shared
+import shutil
 import subprocess
 import sys
 from threading import local
@@ -24,7 +25,7 @@ def getThreadId():
     return ""
 
 def getFormattedTimestamp():
-    return datetime.datetime.now().strftime("[%Y-%m-%d@%H:%M:%S]")
+    return datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
 
 def getTimestamp():
     return datetime.datetime.now().timestamp()
@@ -128,7 +129,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                 if verification:
                     error(type(e), "exception occurred during open", e)
                 if makeLog:
-                    log.append({"result": "failure", "logs": [], "details": str(e)})
+                    log.append({"result": "failure", "logs": [], "details": str(e).strip()})
                 return (dbContent, metadata, log)
             
             openConns.append({"c": newConn, "id": cid, "numStatements": numStatements, "statements": [], "localContent": dbContent.copy(), "lockedVals": set()})
@@ -181,7 +182,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                     if verification:
                         error(type(e), "exception occurred during insert", e)
                     if makeLog:
-                        log.append({"result": "failure", "logs": [], "details": str(e)})
+                        log.append({"result": "failure", "logs": [], "details": str(e).strip()})
                     return (dbContent, metadata, log)
                 
             elif stmtTypeP < shared.P_INSERT + shared.P_UPDATE:
@@ -258,7 +259,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                     if verification:
                         error(type(e), "exception occurred during update,", ("cc" if expectCC else "no cc"), e)
                     if makeLog:
-                        log.append({"result": "failure", "logs": [], "details": str(e)})
+                        log.append({"result": "failure", "logs": [], "details": str(e).strip()})
                     return (dbContent, metadata, log)
                 
             else:
@@ -334,7 +335,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                     if verification:
                         error(type(e), "exception occurred during delete,", ("cc" if expectCC else "no cc"), e)
                     if makeLog:
-                        log.append({"result": "failure", "logs": [], "details": str(e)})
+                        log.append({"result": "failure", "logs": [], "details": str(e).strip()})
                     return (dbContent, metadata, log)
             
             aid = aid + 1
@@ -383,7 +384,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                         error(type(e), "exception occurred during commit", e)
                     metadata["altContent"] = newContent
                     if makeLog:
-                        log.append({"result": "failure", "logs": [], "details": str(e)})
+                        log.append({"result": "failure", "logs": [], "details": str(e).strip()})
                     return (dbContent, metadata, log)
                 if not verification:
                     metadata["oldSnapshots"].append(dbContent)
@@ -414,7 +415,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                     if verification:
                         error(type(e), "exception occurred during rollback", e)
                     if makeLog:
-                        log.append({"result": "failure", "logs": [], "details": str(e)})
+                        log.append({"result": "failure", "logs": [], "details": str(e).strip()})
                     return (dbContent, metadata, log)
             
             # debug(dbContent, level=4)
@@ -427,7 +428,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                     commandIntoFifo(id, "lazyfs::cache-checkpoint")
             except Exception as e:
                 if makeLog:
-                    log.append({"result": "failure", "logs": [], "details": str(e)})
+                    log.append({"result": "failure", "logs": [], "details": str(e).strip()})
                 return (dbContent, metadata, log)
         
         #########################
@@ -677,6 +678,10 @@ def buildSUTImage(wal_sync_method=None):
         error("building SUT failed with code", r.returncode)
         error(r.stdout.decode())
         error(r.stderr.decode(), kill=True)
+    if os.path.exists("/dev/shm/ctf/container"):
+        subprocess.run(["rm", "-fr", "/dev/shm/ctf/container"])
+    os.makedirs("/dev/shm/ctf/container", exist_ok=True)
+    os.symlink("/dev/shm/ctf/container", os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "container"]))
     debug("\033[1mdone\033[0m building", level=2)
 
 def prepHostEnvironment(containerID=None):
@@ -766,6 +771,8 @@ def cleanupAll(supressErrors=False):
         error("cleaning up all failed with code", r.returncode)
         error(r.stdout.decode())
         error(r.stderr.decode())
+    os.remove(os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "container"]))
+    os.rmdir("/dev/shm/ctf/container")
     debug("\033[1mdone\033[0m cleaning up", level=2)
 
 def getPort(containerID):

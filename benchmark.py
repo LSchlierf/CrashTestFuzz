@@ -313,9 +313,9 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
                     testMetadata["result"] = "incorrect-content"
                     testMetadata["details"] = {"expected": content, "actual": actual, "mismatch": mismatch}
                 except Exception as e:
-                    error(type(e), "Exception during dump:", str(e))
+                    error(type(e), "Exception during dump:", str(e).strip())
                     testMetadata["result"] = "error"
-                    testMetadata["details"] = str(e)
+                    testMetadata["details"] = str(e).strip()
                 metadata["testMetadata"] = testMetadata
                 results[verificationDuplicateID] = testMetadata
                 stopContainer(verificationDuplicateID, supressErrors=True)
