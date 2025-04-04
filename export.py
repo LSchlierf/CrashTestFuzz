@@ -14,26 +14,29 @@ def main():
     
     shared.DEBUG_LEVEL = 2
     for path in sys.argv[1:]:
-        export(path)
+        reexport(path)
     utils.info("done.")
     
-def export(path):
+def reexport(path):
     if not os.path.exists(path):
         utils.error(f"Invalid path: {path}")
         return
         
+    if "logs/" in path:
+        shared.SUT = path.split("logs/")[1].split("/")[0]
+    else:
+        sut = input(f"Enter SUT for {path}: ")
+        if len(sut) > 0:
+            shared.SUT = sut
+        else:
+            shared.SUT = "unknown"
+    
+    collectAndExport(path)
+
+def collectAndExport(path):
     try:
         with open(path, "r") as f:
             data = [json.load(f)]
-        
-        if "logs/" in path:
-            shared.SUT = path.split("logs/")[1].split("/")[0]
-        else:
-            sut = input(f"Enter SUT for {path}: ")
-            if len(sut) > 0:
-                shared.SUT = sut
-            else:
-                shared.SUT = "unknown"
         
         if "parentID" in data[0] and data[0]["parentID"] != "": # test report
             

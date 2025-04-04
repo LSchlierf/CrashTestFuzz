@@ -1,3 +1,4 @@
+import export
 import itertools
 import json
 import queue
@@ -31,33 +32,33 @@ def getTestMetadata():
 def copyLogs(seed, id, restarts=0):
     shutil.copy(
         os.path.abspath(f"SUT/{shared.SUT}/container/container-{id}/{shared.SUT}.log"), 
-        os.path.abspath(f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/{id}-{shared.SUT}-{restarts}.log")
+        os.path.abspath(f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/raw/{id}-{shared.SUT}-{restarts}.log")
     )
     shutil.copy(
         os.path.abspath(f"SUT/{shared.SUT}/container/container-{id}/lazyfs.log"), 
-        os.path.abspath(f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/{id}-lazyfs-{restarts}.log")
+        os.path.abspath(f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/raw/{id}-lazyfs-{restarts}.log")
     )
 
 def copyPersisted(seed, id):
     shutil.copytree(
         os.path.abspath(f"SUT/{shared.SUT}/container/container-{id}/persisted"),
-        os.path.abspath(f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/{id}-persisted"),
+        os.path.abspath(f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/raw/{id}-persisted"),
         dirs_exist_ok=True
     )
 
 def dumpTestMetadata(seed, id, testMetadata, parentID=""):
-    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}"):
-        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
+    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw"):
+        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw", exist_ok=True)
     dumpIntoFile(
-        f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/{id}.json",
+        f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/raw/{id}.json",
         json.dumps({"testMetadata": testMetadata, "parentID": parentID}, indent=4)
     )
 
 def logAll(seed, id, metadata, log, restarts=0, parentID=""):
-    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}"):
-        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
+    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw"):
+        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw", exist_ok=True)
     dumpIntoFile(
-        f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/{id}.json",
+        f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/raw/{id}.json",
         json.dumps({"metadata": metadata, "log": log, "parentID": parentID}, indent=4)
     )
     try:
@@ -117,9 +118,9 @@ def runSeeds(makeLog, seeds):
         cleanupContainer(duplicateID)
 
         files = extractFiles(lazyfsLogs)
-        if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}"):
-            os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
-        dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testfiles-{duplicateID}.json", json.dumps({"parent": parentID, "fileOps": files}, indent=4), force=True)
+        if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw"):
+            os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw", exist_ok=True)
+        dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/testfiles-{duplicateID}.json", json.dumps({"parent": parentID, "fileOps": files}, indent=4), force=True)
 
         if shared.STEPS == 0:
             continue
@@ -153,6 +154,33 @@ def runSeeds(makeLog, seeds):
         
         dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testResult.json", json.dumps({"parents": parents, "results": results}, indent=4), force=True)
         cleanupEnvs()
+        
+        info("Exporting batch")
+        
+        os.mkdir(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization")
+        
+        jsonfiles = [f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/{item}" for item in os.listdir(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw") if (item.endswith(".json") and not item.startswith("testfiles"))]
+        
+        for file in jsonfiles:
+            id = file.split(".json")[0].split("/")[-1]
+            export.collectAndExport(file)
+            resType = results[id]["result"]
+            resNum = results[id]["number"]
+            if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}"):
+                os.mkdir(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}")
+            
+            shutil.copyfile(
+                file,
+                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}.json"
+            )
+            shutil.copyfile(
+                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/{id}-wide.html",
+                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}-wide.html"
+            )
+            shutil.copyfile(
+                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/{id}-slim.html",
+                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}-slim.html"
+            )
 
         info("Batch finished")
     
@@ -393,9 +421,9 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     cleanupContainer(analysisDuplicateID)
 
     files = extractFiles(lazyfsLogs)
-    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}"):
-        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}", exist_ok=True)
-    dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/testfiles-{analysisDuplicateID}-{depth}.json", json.dumps({"parent": parentID, "fileOps": files}, indent=4), force=True)
+    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw"):
+        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw", exist_ok=True)
+    dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/testfiles-{analysisDuplicateID}-{depth}.json", json.dumps({"parent": parentID, "fileOps": files}, indent=4), force=True)
 
     hurdles = getHurdles(files, depth + 1, steps)
 

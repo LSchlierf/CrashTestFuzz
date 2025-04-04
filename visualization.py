@@ -321,13 +321,18 @@ def testMetadata(metadata):
         result = f"""<span style="color: green">correct content after restart{d["result"][15:]}</span>"""
     elif d["result"] == "correct-parent-content":
         result = """<span style="color: green">correct (unchanged) content after crash during restart</span>"""
-    elif d["result"].startswith("incorrect-content"):
+    elif d["result"].startswith("incorrect-content; lost"):
         result = f"""<span style="color: red">incorrect content after restart{d["result"][17:]}</span>"""
+    elif d["result"].startswith("incorrect"):
+        result = """<span style="color: red">incorrect content</span>"""
+        if "details" in d:
+            result += f"""<br/>{misMatchTable(d["details"])}"""
     elif d["result"] == "no-restart":
         result = """<span style="color: orange">container didn't restart</span>"""
     elif d["result"] == "error":
         result = """<span style="color: orange">error</span>"""
-        
+        if "details" in d:
+            result += f"""<br>Details: {d["details"]}"""
     
     return f"""<b>Test information for depth {d["depth"]}</b><br/>
 Number: {d["number"]}<br/>
@@ -336,6 +341,26 @@ Timing: {d["timing"]}<br/>
 Operation: {d["operation"]}<br/>
 Occurrence: {d["hurdle"]}<br/>
 Result: {result}<br/><br/>"""
+
+def misMatchTable(details):
+    expected = set(tuple(d) for d in details["expected"])
+    actual = set(tuple(d) for d in details["actual"])
+    
+    mismatch = f"""<details><summary>Mismatch</summary>
+Expected: {len(expected)} total<br/>Actual: {len(actual)} total<table>
+<thead><tr><td>In simulated db</td><td>in actual db</td></tr></thead>"""
+
+    complete = [(b,a) for (a,b) in sorted((b,a) for (a,b) in expected | actual)]
+    
+    expected = [(i if i in expected else "") for i in complete]
+    actual = [(i if i in actual else "") for i in complete]
+
+    for (e, a) in itertools.zip_longest(expected, actual, fillvalue=""):
+        mismatch += f"""<tr><td>{e}</td><td>{a}</td></tr>"""
+        
+    mismatch += "</table></details>"
+    
+    return mismatch
 
 def additionalLog(metadata, key="restartLog"):
     if not key in metadata or len(metadata[key]) == 0:
