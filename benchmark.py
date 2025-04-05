@@ -74,6 +74,36 @@ def logAll(seed, id, metadata, log, restarts=0, parentID=""):
 def runSeeds(makeLog, seeds):
     
     shared.TEST_RUN = "test-" + getFormattedTimestamp()
+    
+    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}"):
+        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}", exist_ok=True)
+    
+    dumpIntoFile(f"logs/{shared.SUT}/{shared.TEST_RUN}/configuration.json", json.dumps({
+        "num_transactions": shared.NUM_TRANSACTIONS,
+        "concurrent_transactions_avg": shared.CONCURRENT_TRANSACTIONS[0],
+        "concurrent_transactions_var": shared.CONCURRENT_TRANSACTIONS[1],
+        "transaction_size_avg": shared.TRANSACTION_SIZE[0],
+        "transaction_size_var": shared.TRANSACTION_SIZE[1],
+        "statement_size_avg": shared.STATEMENT_SIZE[0],
+        "statement_size_var": shared.STATEMENT_SIZE[1],
+        "p_commit": shared.P_COMMIT,
+        "p_insert": shared.P_INSERT,
+        "p_update": shared.P_UPDATE,
+        "p_serialization_failure": shared.P_SERIALIZATION_FAILURE,
+        "verify": False,
+        "sync_method": shared.SYNC_METHOD,
+        "checkpoint": shared.CHECKPOINT,
+        "walfile": shared.FILE,
+        "concurrent": shared.CONCURRENT_TESTS,
+        "log": makeLog,
+        "steps": shared.STEPS,
+        "operation": shared.OP,
+        "timing": shared.TIMING,
+        "recursion_depth": shared.RECURSION_DEPTH,
+        "recursion_factor": shared.RECURSION_FACTOR,
+        "sut": shared.SUT,
+        "seed": seeds
+    }, indent=2))
 
     buildSUTImage(wal_sync_method=shared.SYNC_METHOD)
     for (batch, seed) in enumerate(seeds):
@@ -170,10 +200,6 @@ def runSeeds(makeLog, seeds):
                 os.mkdir(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}")
             
             shutil.copyfile(
-                file,
-                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}.json"
-            )
-            shutil.copyfile(
                 f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/{id}-wide.html",
                 f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}-wide.html"
             )
@@ -237,6 +263,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
         content = parentContent
     
     else:
+        verify(shared.DB_TABLENAME, parentContent, port)
         (content, metadata, log) = runWorkload(port, childID, seed, True, dbContent=parentContent)
         mergeLogs(metadata, log, childID)
         startup = True

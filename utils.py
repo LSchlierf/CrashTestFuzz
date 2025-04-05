@@ -672,16 +672,16 @@ def verify(name, content, port, kill=False, supressErrors=False):
 ###############################
 
 def buildSUTImage(wal_sync_method=None):
-    if os.path.exists("/dev/shm/ctf/container"):
-        error("Another instance of CrashTestFuzz is running or the previous run failed.\nClean up all orphaned docker containers and remove /dev/shm/ctf/container", kill=True)
+    if os.path.exists(f"/dev/shm/ctf/{shared.SUT}"):
+        error(f"Another instance of CrashTestFuzz testing {shared.SUT} is running or a previous run failed.\nIn the latter case, clean up all orphaned docker containers and remove /dev/shm/ctf/{shared.SUT} as well as ./SUT/{shared.SUT}/container", kill=True)
+    os.makedirs(f"/dev/shm/ctf/{shared.SUT}", exist_ok=True)
+    os.symlink(f"/dev/shm/ctf/{shared.SUT}", os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "container"]))
     debug("building SUT, " + "no WAL_SYNC_METHOD given" if wal_sync_method is None else "WAL_SYNC_METHOD is " + wal_sync_method, level=2)
     r = subprocess.run(["bash", "./build-image.sh", ("" if wal_sync_method is None else wal_sync_method)], cwd=os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "scripts"]), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if r.returncode != 0:
         error("building SUT failed with code", r.returncode)
         error(r.stdout.decode())
         error(r.stderr.decode(), kill=True)
-    os.makedirs("/dev/shm/ctf/container", exist_ok=True)
-    os.symlink("/dev/shm/ctf/container", os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "container"]))
     debug("\033[1mdone\033[0m building", level=2)
 
 def prepHostEnvironment(containerID=None):
@@ -772,7 +772,7 @@ def cleanupAll(supressErrors=False):
         error(r.stdout.decode())
         error(r.stderr.decode())
     os.remove(os.sep.join([os.path.dirname(os.path.abspath(__file__)), "SUT", shared.SUT, "container"]))
-    os.rmdir("/dev/shm/ctf/container")
+    os.rmdir(f"/dev/shm/ctf/{shared.SUT}")
     debug("\033[1mdone\033[0m cleaning up", level=2)
 
 def getPort(containerID):
