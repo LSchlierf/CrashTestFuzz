@@ -44,15 +44,19 @@ Example for postgres:
 
 See the `demo-configs` folder for more examples.
 
+The parameters available for configs are documented in [configs.md](configs.md).
+
 ### Exporting test results
 
 CrashTestFuzz can export the generated `.json` test results from a single container, both as a `.html` page as well as a perfetto `.trace` file (open with [ui.perfetto.dev](https://ui.perfetto.dev/)).
 
 ```sh
-./exportVisualization.py path/to/result1.json path/to/result2.json ...
+./export.py path/to/result1.json path/to/result2.json ...
 ```
 
 The generated files are placed next to the given `.json` files. If the `.json` file is in the `logs/thesutname/...` folder, the script will automatically detect the proper SUT name, otherwise you will be prompted to enter the SUT name.
+
+Results from test runs with fault injection are automatically exported and ordered.
 
 ## Adding your own SUT
 
