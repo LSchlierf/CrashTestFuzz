@@ -39,6 +39,18 @@ def copyLogs(seed, id, restarts=0):
         os.path.abspath(f"logs/{shared.SUT}/{shared.TEST_RUN}/{seed}/raw/{id}-lazyfs-{restarts}.log")
     )
 
+def copyVisualization(seed, id, resType, resNum="0"):
+    if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}"):
+        os.makedirs(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}", exist_ok=True)
+    shutil.copyfile(
+        f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/{id}-wide.html",
+        f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}-wide.html"
+    )
+    shutil.copyfile(
+        f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/{id}-slim.html",
+        f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}-slim.html"
+    )
+
 def copyPersisted(seed, id):
     shutil.copytree(
         os.path.abspath(f"SUT/{shared.SUT}/container/container-{id}/persisted"),
@@ -196,17 +208,7 @@ def runSeeds(makeLog, seeds):
             export.collectAndExport(file)
             resType = results[id]["result"]
             resNum = results[id]["number"]
-            if not os.path.exists(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}"):
-                os.mkdir(f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}")
-            
-            shutil.copyfile(
-                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/{id}-wide.html",
-                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}-wide.html"
-            )
-            shutil.copyfile(
-                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/raw/{id}-slim.html",
-                f"logs/{shared.SUT}/{shared.TEST_RUN}/{str(seed)}/visualization/{resType}/{resNum.replace('.', '-')}-slim.html"
-            )
+            copyVisualization(seed, id, resType, resNum)
 
         info("Batch finished")
     
@@ -250,7 +252,8 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     
     port = runContainer(childID, crashcmd=cmd)
     startup = False
-    if not waitUntilAvailable(childID, port, 90):
+    metadata, log = {}, []
+    if not waitUntilAvailable(childID, port, 90, supressErrors=True):
         info("no startup")
         testMetadata["result"] = "no-start"
         testMetadata["id"] = childID
@@ -293,7 +296,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     
     if startup:
 
-        if not waitUntilAvailable(verificationDuplicateID, port, 90):
+        if not waitUntilAvailable(verificationDuplicateID, port, 90, supressErrors=True):
             info("verification duplicate didn't restart, early return")
             del metadata["oldSnapshots"]
             if "altContent" in metadata:
@@ -339,6 +342,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
 
         else:
             oldMatch = False
+            lostCommits = 0
             for i in range(len(metadata["oldSnapshots"])):
                 if verify(shared.DB_TABLENAME, metadata["oldSnapshots"][-(i + 1)], port, supressErrors=True):
                     oldMatch = True
@@ -383,7 +387,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     
     else:
         
-        if not waitUntilAvailable(verificationDuplicateID, port, 90):
+        if not waitUntilAvailable(verificationDuplicateID, port, 90, supressErrors=True):
             info("verification duplicate didn't restart, early return")
             testMetadata["result"] = "no-restart"
             results[verificationDuplicateID] = testMetadata
@@ -497,6 +501,8 @@ def verifySeed(seed, makeLog):
     if makeLog == "all" or (makeLog == "failed" and not metadata["successful"]):
         mergeLogs(metadata, log, containerID)
         logAll(seed, containerID, metadata, log)
+        export.collectAndExport(f"logs/{shared.SUT}/trial/{seed}/raw/{containerID}.json")
+        copyVisualization(seed, containerID, metadata["result"] if "result" in metadata else "successful", containerID)
         info("trace hash:", traceHash(log))
     cleanupContainer(containerID)
     debug("seed was", seed, level=1)
@@ -534,6 +540,7 @@ def verifySeedsThreaded(makeLog, seeds):
                 port = runContainer(id)
                 if not waitUntilAvailable(id, port, timeout=90):
                     error("container didn't start on retry, seed", seed)
+                    continue
                 else:
                     create(shared.DB_TABLENAME, test_db["schema"], port)
                     (content, metadata, log) = runWorkload(port, id, seed, makeLog=True, verification=True)

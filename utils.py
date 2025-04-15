@@ -423,6 +423,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                 if verification and not verify(shared.DB_TABLENAME, dbContent, port):
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": "verify mismatch"})
+                        metadata["result"] = "verify mismatch"
+                        metadata["details"] = {"expected": dbContent, "actual": dump(shared.DB_TABLENAME, port)}
                     return (dbContent, metadata, log)
                 if shared.CHECKPOINT:
                     commandIntoFifo(id, "lazyfs::cache-checkpoint")
@@ -798,7 +800,7 @@ def getPort(containerID):
             tries += 1
             time.sleep(0.5)
 
-def waitUntilAvailable(id, port, timeout=0, kill=False):
+def waitUntilAvailable(id, port, timeout=0, kill=False, supressErrors=False):
     secs = 0
     while True:
         if shared.SUT == "postgres":
@@ -822,7 +824,8 @@ def waitUntilAvailable(id, port, timeout=0, kill=False):
             except:
                 pass
         if timeout != 0 and secs >= timeout:
-            error("Timeout while waiting for system start after", timeout, "seconds", kill=kill)
+            if not supressErrors:
+                error("Timeout while waiting for system start after", timeout, "seconds", kill=kill)
             return False
         secs += 1
         sleep(1)

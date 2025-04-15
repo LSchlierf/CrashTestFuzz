@@ -1,3 +1,4 @@
+from functools import cmp_to_key
 import itertools
 import json
 import shared
@@ -119,6 +120,16 @@ details > summary {{
     height: 50%;
     bottom: 50%;
 }}
+.rollback.update + .openConnLine {{
+    height: 100%;
+    top: 0;
+    bottom: 0;
+}}
+.rollback.delete + .openConnLine {{
+    height: 100%;
+    top: 0;
+    bottom: 0;
+}}
 .failure {{
     width: 20em;
     background: lightcoral;
@@ -165,7 +176,8 @@ Number of DELETEs: {metadata["numDelete"]} | of which produced concurrency confl
 Number of COMMITs: {metadata["numCommit"]} ({round(metadata["numCommit"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%) (Target: {round(metadata["pCommit"] * 100, 1)}%)<br/>
 Number of ROLLBACKs: {metadata["numRollback"]} ({round(metadata["numRollback"] / metadata["transactions"] * 100, 1) if metadata["transactions"] != 0 else "0"}%) (Target: {round(metadata["pRollback"] * 100, 1)}%) (Not including concurrency conflicts)<br/>
 Trace hash: <b>{traceHash(log)}</b><br/>
-Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/><br/>
+Transaction trace was {successfulText if metadata["successful"] else unsuccessfulText}<br/>
+{result(metadata)}<br/>
 <details><summary>Initial log ({len(metadata["initialLog"])} line{"" if len(metadata["initialLog"]) == 1 else "s"})</summary>{"<br/>".join(metadata["initialLog"])}</details>
 {additionalLog(metadata)}<br/></div>{wideTable(metadata, log) if wide else slimTable(log)}<br/><br/>"""
 
@@ -299,15 +311,29 @@ def statementItem(event, status, nums=False):
     elif event["type"] == "insert":
         return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} insert">{"Transaction " + str(event["transaction"]) + "<br/>" if nums else ""}INSERT {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
     elif event["type"] == "update":
-        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} update">{"Transaction " + str(event["transaction"]) + "<br/>" if nums else ""}UPDATE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
+        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] not in ["success", "rollback"] else ""}{" rollback" if status["result"] == "rollback" else ""} update">{"Transaction " + str(event["transaction"]) + "<br/>" if nums else ""}UPDATE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
     elif event["type"] == "delete":
-        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} delete">{"Transaction " + str(event["transaction"]) + "<br/>" if nums else ""}DELETE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
+        return f"""<td class="tableInner"><div class="event{" failure" if status["result"] not in ["success", "rollback"] else ""}{" rollback" if status["result"] == "rollback" else ""} delete">{"Transaction " + str(event["transaction"]) + "<br/>" if nums else ""}DELETE {event["count"]}{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}{"<br/>Serialization Failure,<br/>ROLLBACK" if status["result"] == "rollback" else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
     elif event["type"] == "commit":
         return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} commit">Transaction {event["transaction"]}<br/>COMMIT{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
     elif event["type"] == "rollback":
         return f"""<td class="tableInner"><div class="event{" failure" if status["result"] != "success" else ""} rollback">Transaction {event["transaction"]}<br/>ROLLBACK{"<br/>Failure" if status["result"] == "failure" else ""}{":<br/>" + status["details"] if "details" in status else ""}</div>{"" if nums else "<div class='openConnLine'></div>"}</td>"""
     
     return """<td class="tableInner>UNKNOWN EVENT</td>"""
+
+def result(metadata):
+    if not "result" in metadata:
+        return ""
+    
+    res = f"""Result: {metadata["result"]}"""
+    
+    if "details" in metadata:
+        if "expected" in metadata["details"] and "actual" in metadata["details"]:
+            res += misMatchTable(metadata["details"])
+        else:
+            res += f"""Details: {metadata["details"]}<br/>"""
+    
+    return res
 
 def testMetadata(metadata):
     if not "testMetadata" in metadata:
@@ -350,13 +376,39 @@ def misMatchTable(details):
 Expected: {len(expected)} total<br/>Actual: {len(actual)} total<table>
 <thead><tr><td>In simulated db</td><td>in actual db</td></tr></thead>"""
 
-    complete = [(b,a) for (a,b) in sorted((b,a) for (a,b) in expected | actual)]
+    def compare(a, b):
+        if None in a and None in b:
+            
+            if a[0] is None and b[0] is None:
+                if a[1] is None:
+                    return -1
+                if b[1] is None:
+                    return 1
+                return a[1] - b[1]
+                        
+            if a[0] is None:
+                return -1
+            if b[0] is None:
+                return 1
+            
+        if None in a:
+            return -1
+        if None in b:
+            return 1
+            
+        if a > b:
+            return 1
+        if b > a:
+            return -1
+        return 0
+
+    complete = [(b,a) for (a,b) in sorted([(b,a) for (a,b) in expected | actual], key=cmp_to_key(compare))]
     
     expected = [(i if i in expected else "") for i in complete]
     actual = [(i if i in actual else "") for i in complete]
 
-    for (e, a) in itertools.zip_longest(expected, actual, fillvalue=""):
-        mismatch += f"""<tr><td>{e}</td><td>{a}</td></tr>"""
+    for (e, a) in zip(expected, actual, strict=True):
+        mismatch += f"""<tr><td{" style=\"color: red\"" if a == "" else ""}>{e}</td><td{" style=\"color: red\"" if e == "" else ""}>{a}</td></tr>"""
         
     mismatch += "</table></details>"
     
