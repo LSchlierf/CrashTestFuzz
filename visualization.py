@@ -331,7 +331,7 @@ def result(metadata):
         if "expected" in metadata["details"] and "actual" in metadata["details"]:
             res += misMatchTable(metadata["details"])
         else:
-            res += f"""Details: {metadata["details"]}<br/>"""
+            res += f"""<br/>Details: {metadata["details"]}<br/>"""
     
     return res
 

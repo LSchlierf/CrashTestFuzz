@@ -130,6 +130,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                     error(type(e), "exception occurred during open", e)
                 if makeLog:
                     log.append({"result": "failure", "logs": [], "details": str(e).strip()})
+                metadata["result"] = "error"
+                metadata["details"] = str(e).strip()
                 return (dbContent, metadata, log)
             
             openConns.append({"c": newConn, "id": cid, "numStatements": numStatements, "statements": [], "localContent": dbContent.copy(), "lockedVals": set()})
@@ -183,6 +185,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                         error(type(e), "exception occurred during insert", e)
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e).strip()})
+                    metadata["result"] = "error"
+                    metadata["details"] = str(e).strip()
                     return (dbContent, metadata, log)
                 
             elif stmtTypeP < shared.P_INSERT + shared.P_UPDATE:
@@ -228,6 +232,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                             error("Expected concurrency conflict")
                         if makeLog:
                             log.append({"result": "failure", "logs": [], "details": "expected concurrency conflict"})
+                        metadata["result"] = "expected-concurrency-conflict"
                         return (dbContent, metadata, log)
                     clientUpdate((currConn["localContent"], (valsToEdit, aid)))
                     currConn["lockedVals"] |= set(valsToEdit)
@@ -239,6 +244,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                         error("Didn't expect concurrency conflict")
                         if makeLog:
                             log.append({"result": "failure", "logs": [], "details": "didn't expect concurrency conflict"})
+                        metadata["result"] = "didnt-expect-concurrency-conflict"
                         return (dbContent, metadata, log)
                     debug("concurrency conflict, need to rollback", level=4)
                     currConn["c"].rollback()
@@ -260,6 +266,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                         error(type(e), "exception occurred during update,", ("cc" if expectCC else "no cc"), e)
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e).strip()})
+                    metadata["result"] = "error"
+                    metadata["details"] = str(e).strip()
                     return (dbContent, metadata, log)
                 
             else:
@@ -304,6 +312,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                             error("Expected concurrency conflict")
                         if makeLog:
                             log.append({"result": "failure", "logs": [], "details": "expected concurrency conflict"})
+                        metadata["result"] = "expected-concurrency-conflict"
                         return (dbContent, metadata, log)
                     clientDelete((currConn["localContent"], valsToRm))
                     currConn["lockedVals"] |= set(valsToRm)
@@ -315,6 +324,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                         error("Didn't expect concurrency conflict")
                         if makeLog:
                             log.append({"result": "failure", "logs": [], "details": "didn't expect concurrency conflict"})
+                        metadata["result"] = "didnt-expect-concurrency-conflict"
                         return (dbContent, metadata, log)
                     debug("concurrency conflict, need to rollback", level=4)
                     currConn["c"].rollback()
@@ -336,6 +346,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                         error(type(e), "exception occurred during delete,", ("cc" if expectCC else "no cc"), e)
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e).strip()})
+                    metadata["result"] = "error"
+                    metadata["details"] = str(e).strip()
                     return (dbContent, metadata, log)
             
             aid = aid + 1
@@ -385,6 +397,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                     metadata["altContent"] = newContent
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e).strip()})
+                    metadata["result"] = "error"
+                    metadata["details"] = str(e).strip()
                     return (dbContent, metadata, log)
                 if not verification:
                     metadata["oldSnapshots"].append(dbContent)
@@ -416,6 +430,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                         error(type(e), "exception occurred during rollback", e)
                     if makeLog:
                         log.append({"result": "failure", "logs": [], "details": str(e).strip()})
+                    metadata["result"] = "error"
+                    metadata["details"] = str(e).strip()
                     return (dbContent, metadata, log)
             
             # debug(dbContent, level=4)
@@ -431,6 +447,8 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
             except Exception as e:
                 if makeLog:
                     log.append({"result": "failure", "logs": [], "details": str(e).strip()})
+                metadata["result"] = "error"
+                metadata["details"] = str(e).strip()
                 return (dbContent, metadata, log)
         
         #########################
