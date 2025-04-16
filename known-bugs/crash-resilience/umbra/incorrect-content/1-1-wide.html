@@ -1,0 +1,812 @@
+<!DOCTYPE html><html><head><title>9f53c7d7-46d5-4a40-8e74-78a2d4bcd1aa | Transaction log</title><style>
+table, td {
+    border: 1px solid lightgray;
+    border-collapse: collapse;
+}
+table {
+    white-space: nowrap;
+}
+thead {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+thead td {
+    border-bottom: 3px solid black;
+    background: lightgray;
+}
+td {
+    font-size: 16px;
+    text-align: center;
+}
+.tableInner {
+    width: 200px;
+    min-height: 30px;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+.openConnLine {
+    height: 100%;
+    min-height: 30px;
+    width: 3px;
+    background: black;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    z-index: -1;
+}
+.commitLine {
+    height: 3px;
+    width: 100%;
+    background: green;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+}
+.eventNumber {
+    padding: 0 10px;
+    text-align: center;
+}
+.farLeft {
+    position: sticky;
+    left: 0;
+    background: lightgray;
+    border-right: 2px solid black;
+    z-index: 2;
+}
+.farRight {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: lightgray;
+    text-align: left;
+    padding: 0 10px;
+    max-width: 30vw;
+}
+.slimLogs {
+    max-width: 80vw;
+    font-family: monospace;
+    overflow: scroll;
+    text-align: left;
+    padding: 20px 10px
+}
+details {
+    font-family: monospace;
+    overflow: scroll;
+}
+details > summary {
+    font-family: initial;
+}
+.event {
+    background: white;
+    border-radius: 10px;
+    border: 2px solid black;
+}
+.open {
+    border: 3px solid blue;
+}
+.open + .openConnLine {
+    height: 50%;
+    top: 50%;
+}
+.commit {
+    border: 3px solid green;
+}
+.rollback {
+    border: 3px solid red;
+}
+.commit + .openConnLine, .rollback + .openConnLine {
+    height: 50%;
+    bottom: 50%;
+}
+.failure {
+    width: 20em;
+    background: lightcoral;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+</style></head><body><div id="metadata">
+<b>Transaction log for 9f53c7d7-46d5-4a40-8e74-78a2d4bcd1aa</b><br/>
+Generated [2025-04-04 13:03:45]<br/><br/>
+<b>Workload information</b><br/>
+System under test (SUT): umbra<br/>
+Seed: 0 (given)<br/>
+Transactions: 20<br/>
+Concurrent connections: 5.0 (avg) | 1.0 (var)<br/>
+Transaction size: 5.0 (avg) | 1.0 (var)<br/>
+Statement size: 1.0 (avg) | 0 (var)<br/>
+Probability for Commit: 0.8<br/>
+Probability for Rollback: 0.2<br/>
+Probability for Insert: 0.7<br/>
+Probability for Update: 0.2<br/>
+Probability for Delete: 0.1<br/>
+Probability for Serialization Failure: 0.01</div><div><br/><br/><b>Test information for depth 0</b><br/>
+Number: 1<br/>
+Target file: umbra.db.wal<br/>
+Timing: before<br/>
+Operation: fsync<br/>
+Occurrence: 6<br/>
+Result: <span style="color: green">correct content after restart; lost-commit</span><br/><br/>
+<b>Trace information</b><br/>
+Number of INSERTs: 11<br/>
+Number of UPDATEs: 1 | of which produced concurrency conflict: 0 (0.0%) (Target: 1.0%)<br/>
+Number of DELETEs: 1 | of which produced concurrency conflict: 0 (0.0%) (Target: 1.0%)<br/>
+Number of COMMITs: 1 (5.0%) (Target: 80.0%)<br/>
+Number of ROLLBACKs: 1 (5.0%) (Target: 20.0%) (Not including concurrency conflicts)<br/>
+Trace hash: <b>6f2369f549a020476bf79eb925c5ac59</b><br/>
+Transaction trace was <span style="color: red">not successful</span><br/><br/>
+<details><summary>Initial log (116 lines)</summary>[umbra] Script started on 2025-04-04 10:48:32+00:00 [COMMAND="/docker-entrypoint.sh" <not executed on terminal>]
+<br/>[umbra] Using the existing database!
+<br/>[umbra] HOST_UID=1004
+<br/>[umbra] WAL_SYNC_METHOD=fsync
+<br/>[umbra] HOSTNAME=94f0bc39e9d2
+<br/>[umbra] CLANG_VERSION=19
+<br/>[umbra] GCC_VERSION=14
+<br/>[umbra] PWD=/lazyfs/lazyfs
+<br/>[umbra] UMBRA_DB=/var/db
+<br/>[umbra] CRASHCMD=
+<br/>[umbra] [[injection]]
+<br/>[umbra] type = "clear-cache"
+<br/>[umbra] from = "/tmp/lazyfs.root/umbra.db.wal"
+<br/>[umbra] timing = "before"
+<br/>[umbra] op = "fsync"
+<br/>[umbra] occurrence = 6
+<br/>[umbra] crash = true
+<br/>[umbra] HOME=/home/local
+<br/>[umbra] RE2_VERSION=11
+<br/>[umbra] TERM=xterm
+<br/>[umbra] SHLVL=1
+<br/>[umbra] HOST_GID=1004
+<br/>[umbra] PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+<br/>[umbra] OLDPWD=/
+<br/>[umbra] _=/usr/bin/env
+<br/>[umbra] Starting the server!
+<br/>[umbra] INFO:    BEGIN (0.000016 s parsing, 0.000208 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000005 s parsing, 0.001088 s compilation, 0.000000 s transmission, 0.000034 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000034 s compilation, 0.000000 s transmission, 0.000005 s execution)
+<br/>[umbra] INFO:    1 row (0.000005 s parsing, 0.000524 s compilation, 0.000000 s transmission, 0.000011 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000002 s parsing, 0.000103 s compilation, 0.000000 s transmission, 0.000005 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000693 s compilation, 0.000000 s transmission, 0.000023 s execution)
+<br/>[umbra] INFO:    1 row (0.000006 s parsing, 0.000572 s compilation, 0.000000 s transmission, 0.001917 s execution)
+<br/>[umbra] INFO:    1 row (0.000004 s parsing, 0.000514 s compilation, 0.000000 s transmission, 0.000281 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000128 s compilation, 0.000000 s transmission, 0.000008 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000848 s compilation, 0.000000 s transmission, 0.000025 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000135 s compilation, 0.000000 s transmission, 0.000008 s execution)
+<br/>[umbra] INFO:    1 row (0.000004 s parsing, 0.000657 s compilation, 0.000000 s transmission, 0.000029 s execution)
+<br/>[umbra] INFO:    1 row (0.000005 s parsing, 0.000610 s compilation, 0.000000 s transmission, 0.000018 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000105 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000723 s compilation, 0.000000 s transmission, 0.000023 s execution)
+<br/>[umbra] INFO:    1 row (0.000004 s parsing, 0.000453 s compilation, 0.000000 s transmission, 0.000016 s execution)
+<br/>[umbra] INFO:    1 row (0.000007 s parsing, 0.004435 s compilation, 0.000000 s transmission, 0.000017 s execution)
+<br/>[umbra] INFO:    1 row (0.000004 s parsing, 0.000661 s compilation, 0.000000 s transmission, 0.000299 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000002 s parsing, 0.000113 s compilation, 0.000000 s transmission, 0.000012 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000728 s compilation, 0.000000 s transmission, 0.000028 s execution)
+<br/>[umbra] INFO:    1 row (0.000005 s parsing, 0.000587 s compilation, 0.000000 s transmission, 0.000284 s execution)
+<br/>[umbra] INFO:    1 row (0.000007 s parsing, 0.004007 s compilation, 0.000000 s transmission, 0.000011 s execution)
+<br/>[umbra] INFO:    1 row (0.000004 s parsing, 0.000549 s compilation, 0.000000 s transmission, 0.000018 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000126 s compilation, 0.000000 s transmission, 0.000008 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000726 s compilation, 0.000000 s transmission, 0.000028 s execution)
+<br/>[umbra] INFO:    ROLLBACK (0.000003 s parsing, 0.000100 s compilation, 0.000000 s transmission, 0.000104 s execution)
+<br/>[umbra] INFO:    1 row (0.000007 s parsing, 0.000596 s compilation, 0.000000 s transmission, 0.000017 s execution)
+<br/>[umbra] INFO:    1 row (0.000006 s parsing, 0.000562 s compilation, 0.000000 s transmission, 0.000018 s execution)
+<br/>[umbra] INFO:    1 row (0.000004 s parsing, 0.000497 s compilation, 0.000000 s transmission, 0.000015 s execution)
+<br/>[umbra] INFO:    1 row (0.000004 s parsing, 0.000639 s compilation, 0.000000 s transmission, 0.000017 s execution)
+<br/>[umbra] NOTICE:  fsync: Transport endpoint is not connected
+<br/>[umbra] PANIC:   unable to synchronize segment file
+<br/>[umbra] Aborted (core dumped)
+<br/>[lazyfs] [2025-04-04 10:48:29.739] [global] [info] [lazyfs.config]: loading config...
+<br/>[lazyfs] [2025-04-04 10:48:29.739] [global] [info] [lazyfs.args]: config path is '/lazyfs/lazyfs/config/config.toml'
+<br/>[lazyfs] [2025-04-04 10:48:29.739] [global] [info] [lazyfs]: trying to create fifo '/tmp/faults.fifo'
+<br/>[lazyfs] [2025-04-04 10:48:29.739] [global] [info] [lazyfs.fifo]: faults fifo exists!
+<br/>[lazyfs] [2025-04-04 10:48:29.739] [global] [warning] [lazyfs.engine] pre-allocating 524288000 bytes...
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [warning] [engine] Pre-allocation finished
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [config] using a custom config
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [config] log all operations = true, logfile = '/tmp/lazyfs.log'
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [config] no. of pages   = 128000
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [config] page size      = 4096
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [config] block size     = 4096
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [config] blocks / page  = 1
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [config] apply eviction = false
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [config] total          = 512000 KiB, 500 MiB, 0.48828125 GiB
+<br/>[lazyfs] [2025-04-04 10:48:30.079] [global] [info] [lazyfs.fifo]: running LazyFS...
+<br/>[lazyfs] [2025-04-04 10:48:30.119] [global] [info] [lazyfs.faults.worker]: waiting for fault commands...
+<br/>[lazyfs] [2025-04-04 10:48:32.790] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:32.791] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/.umbra.db.lock,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:32.791] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:32.972] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:48:32.974] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.tmp,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:32.974] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.wal.tmp,to=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:48:32.974] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:48:32.974] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:48:33.045] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.pages,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:33.046] [global] [info] [lazyfs.ops]: lfs_readdir(path=/tmp/lazyfs.root/,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:33.047] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:33.047] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:48:33.047] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.pages,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:33.047] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.pages)
+<br/>[lazyfs] [2025-04-04 10:48:33.048] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:33.048] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:48:33.048] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.cert,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:33.048] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.cert)
+<br/>[lazyfs] [2025-04-04 10:48:33.048] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.pem,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:33.048] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.pem)
+<br/>[lazyfs] [2025-04-04 10:48:33.049] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.0_0.sample,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:33.049] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:48:33.049] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:33.049] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:48:33.049] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:33.050] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal,size=16384,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:33.050] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:33.050] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:33.051] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:48:33.056] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:48:33.056] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:33.056] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:33.056] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:33.057] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:33.057] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:33.057] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:33.057] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:33.058] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:33.059] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.0_0.sample,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:33.059] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.0_0.sample,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:33.060] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample)
+</details>
+<details><summary>restartLog (164 lines)</summary>[umbra] Script started on 2025-04-04 10:48:51+00:00 [COMMAND="/docker-entrypoint.sh" <not executed on terminal>]
+<br/>[umbra] Using the existing database!
+<br/>[umbra] HOST_UID=1004
+<br/>[umbra] WAL_SYNC_METHOD=fsync
+<br/>[umbra] HOSTNAME=9f3c8ee7358b
+<br/>[umbra] CLANG_VERSION=19
+<br/>[umbra] GCC_VERSION=14
+<br/>[umbra] PWD=/lazyfs/lazyfs
+<br/>[umbra] UMBRA_DB=/var/db
+<br/>[umbra] CRASHCMD=
+<br/>[umbra] HOME=/home/local
+<br/>[umbra] RE2_VERSION=11
+<br/>[umbra] TERM=xterm
+<br/>[umbra] SHLVL=1
+<br/>[umbra] HOST_GID=1004
+<br/>[umbra] PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+<br/>[umbra] OLDPWD=/
+<br/>[umbra] _=/usr/bin/env
+<br/>[umbra] Starting the server!
+<br/>[umbra] INFO:    recovering log '/var/db/umbra.db.wal' after unexpected shutdown. This may take a while...
+<br/>[umbra] INFO:    recovered log '/var/db/umbra.db.wal' after unexpected shutdown.
+<br/>[umbra] INFO:    BEGIN (0.000014 s parsing, 0.000198 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.001020 s compilation, 0.000000 s transmission, 0.000029 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000035 s compilation, 0.000000 s transmission, 0.000005 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000503 s compilation, 0.000000 s transmission, 0.000010 s execution)
+<br/>[umbra] INFO:    0 rows (0.000004 s parsing, 0.000933 s compilation, 0.000000 s transmission, 0.000374 s execution)
+<br/>[umbra] INFO:    COMMIT (0.000002 s parsing, 0.000099 s compilation, 0.000000 s transmission, 0.000008 s execution)
+<br/>[umbra] 
+<br/>[umbra] Script done on 2025-04-04 10:48:55+00:00 [COMMAND_EXIT_CODE="0"]
+<br/>[lazyfs] [2025-04-04 10:48:48.458] [global] [info] [lazyfs.config]: loading config...
+<br/>[lazyfs] [2025-04-04 10:48:48.458] [global] [info] [lazyfs.args]: config path is '/lazyfs/lazyfs/config/config.toml'
+<br/>[lazyfs] [2025-04-04 10:48:48.458] [global] [info] [lazyfs]: trying to create fifo '/tmp/faults.fifo'
+<br/>[lazyfs] [2025-04-04 10:48:48.458] [global] [info] [lazyfs.fifo]: faults fifo exists!
+<br/>[lazyfs] [2025-04-04 10:48:48.458] [global] [warning] [lazyfs.engine] pre-allocating 524288000 bytes...
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [warning] [engine] Pre-allocation finished
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [config] using a custom config
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [config] log all operations = true, logfile = '/tmp/lazyfs.log'
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [config] no. of pages   = 128000
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [config] page size      = 4096
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [config] block size     = 4096
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [config] blocks / page  = 1
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [config] apply eviction = false
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [config] total          = 512000 KiB, 500 MiB, 0.48828125 GiB
+<br/>[lazyfs] [2025-04-04 10:48:48.759] [global] [info] [lazyfs.fifo]: running LazyFS...
+<br/>[lazyfs] [2025-04-04 10:48:48.801] [global] [info] [lazyfs.faults.worker]: waiting for fault commands...
+<br/>[lazyfs] [2025-04-04 10:48:51.510] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.511] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/.umbra.db.lock,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.511] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.672] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:48:51.674] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.tmp,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.675] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.wal.tmp,to=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:48:51.675] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:48:51.675] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:48:51.749] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.pages,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.749] [global] [info] [lazyfs.ops]: lfs_readdir(path=/tmp/lazyfs.root/,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.750] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.750] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:48:51.750] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.pages,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.750] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.pages)
+<br/>[lazyfs] [2025-04-04 10:48:51.751] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.cert,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.751] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.cert)
+<br/>[lazyfs] [2025-04-04 10:48:51.751] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.pem,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.751] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.pem)
+<br/>[lazyfs] [2025-04-04 10:48:51.751] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.751] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:48:51.751] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.752] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:48:51.752] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.752] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:48:51.752] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.0_0.sample,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.753] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:48:51.753] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.753] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal,size=16384,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.753] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:51.753] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.754] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:48:51.754] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:48:51.760] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=73728,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.763] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.763] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=65536)
+<br/>[lazyfs] [2025-04-04 10:48:51.765] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.765] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:48:51.765] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.766] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.766] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.766] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.766] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.767] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:51.767] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.768] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=61440,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.768] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=12288,off=61440)
+<br/>[lazyfs] [2025-04-04 10:48:51.769] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.769] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:48:51.770] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=4096)
+<br/>[lazyfs] [2025-04-04 10:48:51.770] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=8192)
+<br/>[lazyfs] [2025-04-04 10:48:51.770] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=12288)
+<br/>[lazyfs] [2025-04-04 10:48:51.777] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.778] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.778] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.779] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.0_0.sample,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:51.779] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.0_0.sample,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:51.780] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:48:55.487] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:55.488] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=20480)
+<br/>[lazyfs] [2025-04-04 10:48:55.488] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=24576)
+<br/>[lazyfs] [2025-04-04 10:48:55.488] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.488] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:55.489] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.498] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.498] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.498] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.612] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.0_0.sample.2891778633978892948,mode=O_TRUNC)
+<br/>[lazyfs] [2025-04-04 10:48:55.612] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.0_0.sample.2891778633978892948,size=2044,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.613] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.0_0.sample.2891778633978892948,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:48:55.613] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample.2891778633978892948)
+<br/>[lazyfs] [2025-04-04 10:48:55.613] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.0_0.sample.2891778633978892948,to=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:48:55.614] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.tmpschema,mode=O_TRUNC)
+<br/>[lazyfs] [2025-04-04 10:48:55.614] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.tmpschema,size=3532,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.615] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.tmpschema,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:48:55.615] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.tmpschema)
+<br/>[lazyfs] [2025-04-04 10:48:55.615] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.tmpschema,to=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:48:55.627] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:55.627] [global] [info] [lazyfs.ops]: lfs_truncate(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=593920)
+<br/>[lazyfs] [2025-04-04 10:48:55.628] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=593920,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.629] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.629] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=200704)
+<br/>[lazyfs] [2025-04-04 10:48:55.629] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=528384)
+<br/>[lazyfs] [2025-04-04 10:48:55.629] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=4096)
+<br/>[lazyfs] [2025-04-04 10:48:55.629] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=69632)
+<br/>[lazyfs] [2025-04-04 10:48:55.630] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=135168)
+<br/>[lazyfs] [2025-04-04 10:48:55.630] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=266240)
+<br/>[lazyfs] [2025-04-04 10:48:55.630] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=331776)
+<br/>[lazyfs] [2025-04-04 10:48:55.630] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=397312)
+<br/>[lazyfs] [2025-04-04 10:48:55.630] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=462848)
+<br/>[lazyfs] [2025-04-04 10:48:55.630] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:48:55.630] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000)
+<br/>[lazyfs] [2025-04-04 10:48:55.631] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,to=/tmp/lazyfs.root/umbra.db.pages.doublewrite.0000000000000000)
+<br/>[lazyfs] [2025-04-04 10:48:55.631] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=524288)
+<br/>[lazyfs] [2025-04-04 10:48:55.631] [global] [info] [lazyfs.ops]: Calling a sparse write.
+<br/>[lazyfs] [2025-04-04 10:48:55.631] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=393216,off=131072)
+<br/>[lazyfs] [2025-04-04 10:48:55.632] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.632] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=458752)
+<br/>[lazyfs] [2025-04-04 10:48:55.632] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=393216)
+<br/>[lazyfs] [2025-04-04 10:48:55.632] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=327680)
+<br/>[lazyfs] [2025-04-04 10:48:55.632] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=262144)
+<br/>[lazyfs] [2025-04-04 10:48:55.632] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=196608)
+<br/>[lazyfs] [2025-04-04 10:48:55.633] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=131072)
+<br/>[lazyfs] [2025-04-04 10:48:55.633] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=65536)
+<br/>[lazyfs] [2025-04-04 10:48:55.633] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.pages,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:48:55.633] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.0000000000000000)
+<br/>[lazyfs] [2025-04-04 10:48:55.653] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.pages)
+<br/>[lazyfs] [2025-04-04 10:48:55.658] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:55.658] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:55.658] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:48:55.658] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:48:55.658] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:48:55.658] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:48:55.659] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000005,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:48:55.659] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000005)
+<br/>[lazyfs] [2025-04-04 10:48:55.659] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000005)
+<br/>[lazyfs] [2025-04-04 10:48:55.659] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004)
+<br/>[lazyfs] [2025-04-04 10:48:55.659] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:48:55.659] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/.umbra.db.lock)
+<br/>[lazyfs] [2025-04-04 10:48:58.619] [global] [info] [lazyfs]: stopping LazyFS...
+</details><br/></div><table><thead><tr><td></td><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td><td>16</td><td>17</td><td>18</td><td>19</td><td class="farRight">logs</td></tr></thead><tbody><tr><td class="farLeft"></td><td class="tableInner"><div class="event open">Transaction 0<br/>BEGIN<br/>4 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 1<br/>BEGIN<br/>5 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="eventNumber farLeft">0<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>5 lines</summary>[lazyfs] [2025-04-04 10:48:36.749] [global] [info] [lazyfs.ops]: lfs_mkdir(path=/tmp/lazyfs.root/umbra.db.0_0)
+<br/>[lazyfs] [2025-04-04 10:48:36.749] [global] [info] [lazyfs.ops]: lfs_mkdir(path=/tmp/lazyfs.root/umbra.db.0_0/0)
+<br/>[lazyfs] [2025-04-04 10:48:36.750] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=65536)
+<br/>[lazyfs] [2025-04-04 10:48:36.750] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.751] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=4096)
+</details></td></tr><tr><td class="eventNumber farLeft">1<td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>3 lines</summary>[lazyfs] [2025-04-04 10:48:36.752] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=8192)
+<br/>[lazyfs] [2025-04-04 10:48:36.752] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=12288)
+<br/>[lazyfs] [2025-04-04 10:48:36.752] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,isdatasync=0)
+</details></td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 2<br/>BEGIN<br/>7 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>4 lines</summary>[lazyfs] [2025-04-04 10:48:36.753] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:36.753] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.753] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=20480)
+<br/>[lazyfs] [2025-04-04 10:48:36.753] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+</details></td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 3<br/>BEGIN<br/>4 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>1 line</summary>[lazyfs] [2025-04-04 10:48:36.761] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,isdatasync=0)
+</details></td></tr><tr><td class="eventNumber farLeft">2<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>3 lines</summary>[lazyfs] [2025-04-04 10:48:36.762] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=24576)
+<br/>[lazyfs] [2025-04-04 10:48:36.762] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:36.762] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+</details></td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 4<br/>BEGIN<br/>3 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="eventNumber farLeft">3<td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>1 line</summary>[lazyfs] [2025-04-04 10:48:36.767] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=28672)
+</details></td></tr><tr><td class="eventNumber farLeft">4<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event delete">DELETE 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>9 lines</summary>[lazyfs] [2025-04-04 10:48:36.768] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422,mode=O_TRUNC)
+<br/>[lazyfs] [2025-04-04 10:48:36.768] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422,size=2036,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.769] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:48:36.769] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422)
+<br/>[lazyfs] [2025-04-04 10:48:36.770] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422,to=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:48:36.771] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.772] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=32768)
+<br/>[lazyfs] [2025-04-04 10:48:36.772] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.772] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+</details></td></tr><tr><td class="eventNumber farLeft">5<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>2 lines</summary>[lazyfs] [2025-04-04 10:48:36.773] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=36864)
+<br/>[lazyfs] [2025-04-04 10:48:36.773] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=40960)
+</details></td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 5<br/>BEGIN<br/>6 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="eventNumber farLeft">6<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>2 lines</summary>[lazyfs] [2025-04-04 10:48:36.778] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=45056)
+<br/>[lazyfs] [2025-04-04 10:48:36.779] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422,mode=O_TRUNC)
+</details></td></tr><tr><td class="eventNumber farLeft">7<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event update">UPDATE 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>8 lines</summary>[lazyfs] [2025-04-04 10:48:36.780] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422,size=2044,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.781] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:48:36.781] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422)
+<br/>[lazyfs] [2025-04-04 10:48:36.781] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.0_0.sample.12556621852636264422,to=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:48:36.781] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.782] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:48:36.782] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.783] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=49152)
+</details></td></tr><tr><td class="eventNumber farLeft">8<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>1 line</summary>[lazyfs] [2025-04-04 10:48:36.784] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=53248)
+</details></td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 6<br/>BEGIN<br/>5 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event rollback">Transaction 1<br/>ROLLBACK</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>2 lines</summary>[lazyfs] [2025-04-04 10:48:36.789] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=57344)
+<br/>[lazyfs] [2025-04-04 10:48:36.789] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=61440)
+</details></td></tr><tr><td class="eventNumber farLeft">9<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>1 line</summary>[lazyfs] [2025-04-04 10:48:36.790] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=65536)
+</details></td></tr><tr><td class="eventNumber farLeft">10<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>1 line</summary>[lazyfs] [2025-04-04 10:48:36.791] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=69632)
+</details></td></tr><tr><td class="eventNumber farLeft">11<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>17 lines</summary>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=4096,off=73728)
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [critical] Triggered fault condition (op=fsync,timing=before)
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [warning] [lazyfs.cmds]: report request submitted...
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [warning] [lazyfs.cmds]: report generated.
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: [inode 693820] is not fully synced, info:
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: [inode 693820] info: (block 18) to (block 18) [byte index 0 to index 4095]
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: [inode 693820] files mapped to this inode:
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: [inode 693820] => file: '/tmp/lazyfs.root/umbra.db.wal.0000000000000002'
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: [inode 693722] is not fully synced, info:
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: [inode 693722] info: (block 0) to (block 0) [byte index 0 to index 4095]
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: [inode 693722] files mapped to this inode:
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: [inode 693722] => file: '/tmp/lazyfs.root/umbra.db.wal'
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [info] [lazyfs.cmds]: report: total number of bytes un-fsynced: 8192 bytes.
+<br/>[lazyfs] 
+<br/>[lazyfs] [2025-04-04 10:48:36.792] [global] [critical] Killing LazyFS pid 16!
+</details></td></tr><tr><td class="eventNumber farLeft">12<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="openConnLine"></div><div class="commitLine"></div></td><td class="tableInner"><div class="openConnLine"></div><div class="commitLine"></div></td><td class="tableInner"><div class="event failure commit">Transaction 4<br/>COMMIT<br/>Failure:<br/>server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div><div class="commitLine"></div></td><td class="tableInner"><div class="openConnLine"></div><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="tableInner"><div class="commitLine"></div></td><td class="farRight">0 lines</td></tr></tbody></table><br/><br/><div><br/><br/><b>Test information for depth 1</b><br/>
+Number: 1.1<br/>
+Target file: umbra.db.wal<br/>
+Timing: after<br/>
+Operation: write<br/>
+Occurrence: 6<br/>
+Result: <span style="color: red">incorrect content</span><br/><details><summary>Mismatch</summary>
+Expected: 0 total<br/>Actual: 4 total<table>
+<thead><tr><td>In simulated db</td><td>in actual db</td></tr></thead><tr><td></td><td>(0, 5)</td></tr><tr><td></td><td>(0, 6)</td></tr><tr><td></td><td>(1, 9)</td></tr><tr><td></td><td>(1, 10)</td></tr></table></details><br/><br/>
+<b>Trace information</b><br/>
+Number of INSERTs: 4<br/>
+Number of UPDATEs: 0 | of which produced concurrency conflict: 0 (0%) (Target: 1.0%)<br/>
+Number of DELETEs: 1 | of which produced concurrency conflict: 0 (0.0%) (Target: 1.0%)<br/>
+Number of COMMITs: 0 (0.0%) (Target: 80.0%)<br/>
+Number of ROLLBACKs: 0 (0.0%) (Target: 20.0%) (Not including concurrency conflicts)<br/>
+Trace hash: <b>c5691e8d1c4a2d3fb941db87041ec84f</b><br/>
+Transaction trace was <span style="color: red">not successful</span><br/><br/>
+<details><summary>Initial log (121 lines)</summary>[umbra] Script started on 2025-04-04 10:52:25+00:00 [COMMAND="/docker-entrypoint.sh" <not executed on terminal>]
+<br/>[umbra] Using the existing database!
+<br/>[umbra] HOST_UID=1004
+<br/>[umbra] WAL_SYNC_METHOD=fsync
+<br/>[umbra] HOSTNAME=29dcb22d3bb2
+<br/>[umbra] CLANG_VERSION=19
+<br/>[umbra] GCC_VERSION=14
+<br/>[umbra] PWD=/lazyfs/lazyfs
+<br/>[umbra] UMBRA_DB=/var/db
+<br/>[umbra] CRASHCMD=
+<br/>[umbra] [[injection]]
+<br/>[umbra] type = "clear-cache"
+<br/>[umbra] from = "/tmp/lazyfs.root/umbra.db.wal"
+<br/>[umbra] timing = "after"
+<br/>[umbra] op = "write"
+<br/>[umbra] occurrence = 6
+<br/>[umbra] crash = true
+<br/>[umbra] HOME=/home/local
+<br/>[umbra] RE2_VERSION=11
+<br/>[umbra] TERM=xterm
+<br/>[umbra] SHLVL=1
+<br/>[umbra] HOST_GID=1004
+<br/>[umbra] PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+<br/>[umbra] OLDPWD=/
+<br/>[umbra] _=/usr/bin/env
+<br/>[umbra] Starting the server!
+<br/>[umbra] INFO:    recovering log '/var/db/umbra.db.wal' after unexpected shutdown. This may take a while...
+<br/>[umbra] INFO:    recovered log '/var/db/umbra.db.wal' after unexpected shutdown.
+<br/>[umbra] INFO:    BEGIN (0.000019 s parsing, 0.000244 s compilation, 0.000000 s transmission, 0.000007 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.001210 s compilation, 0.000000 s transmission, 0.000040 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000004 s parsing, 0.000034 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000538 s compilation, 0.000000 s transmission, 0.000011 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000110 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000640 s compilation, 0.000000 s transmission, 0.000023 s execution)
+<br/>[umbra] INFO:    1 row (0.000005 s parsing, 0.000569 s compilation, 0.000000 s transmission, 0.000321 s execution)
+<br/>[umbra] INFO:    1 row (0.000006 s parsing, 0.000547 s compilation, 0.000000 s transmission, 0.000270 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000105 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000626 s compilation, 0.000000 s transmission, 0.000023 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000002 s parsing, 0.000105 s compilation, 0.000000 s transmission, 0.000005 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000629 s compilation, 0.000000 s transmission, 0.000028 s execution)
+<br/>[umbra] INFO:    1 row (0.000005 s parsing, 0.000493 s compilation, 0.000000 s transmission, 0.000018 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000106 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000624 s compilation, 0.000000 s transmission, 0.000022 s execution)
+<br/>[umbra] INFO:    1 row (0.000005 s parsing, 0.000487 s compilation, 0.000000 s transmission, 0.000016 s execution)
+<br/>[umbra] NOTICE:  unlink: Software caused connection abort
+<br/>[umbra] /var/db/umbra.db.0_0.sample.13191021620529374233
+<br/>[umbra] NOTICE:  pwrite: Software caused connection abort
+<br/>[umbra] PANIC:   unable to update master file
+<br/>[umbra] Aborted (core dumped)
+<br/>[lazyfs] [2025-04-04 10:52:22.587] [global] [info] [lazyfs.config]: loading config...
+<br/>[lazyfs] [2025-04-04 10:52:22.587] [global] [info] [lazyfs.args]: config path is '/lazyfs/lazyfs/config/config.toml'
+<br/>[lazyfs] [2025-04-04 10:52:22.587] [global] [info] [lazyfs]: trying to create fifo '/tmp/faults.fifo'
+<br/>[lazyfs] [2025-04-04 10:52:22.587] [global] [info] [lazyfs.fifo]: faults fifo exists!
+<br/>[lazyfs] [2025-04-04 10:52:22.587] [global] [warning] [lazyfs.engine] pre-allocating 524288000 bytes...
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [warning] [engine] Pre-allocation finished
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [config] using a custom config
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [config] log all operations = true, logfile = '/tmp/lazyfs.log'
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [config] no. of pages   = 128000
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [config] page size      = 4096
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [config] block size     = 4096
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [config] blocks / page  = 1
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [config] apply eviction = false
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [config] total          = 512000 KiB, 500 MiB, 0.48828125 GiB
+<br/>[lazyfs] [2025-04-04 10:52:22.911] [global] [info] [lazyfs.fifo]: running LazyFS...
+<br/>[lazyfs] [2025-04-04 10:52:22.959] [global] [info] [lazyfs.faults.worker]: waiting for fault commands...
+<br/>[lazyfs] [2025-04-04 10:52:25.656] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.656] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/.umbra.db.lock,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.656] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.754] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:52:25.756] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.tmp,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.756] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.wal.tmp,to=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:52:25.756] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:52:25.756] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:52:25.825] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.pages,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.826] [global] [info] [lazyfs.ops]: lfs_readdir(path=/tmp/lazyfs.root/,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.826] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.826] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.pages,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.pages)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.cert,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.cert)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.pem,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.pem)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:52:25.827] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.828] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:52:25.828] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.828] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:52:25.829] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.0_0.sample,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.829] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:52:25.829] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.829] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal,size=16384,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.829] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:52:25.829] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.830] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:52:25.831] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:25.842] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=73728,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.845] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.846] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=65536)
+<br/>[lazyfs] [2025-04-04 10:52:25.847] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.847] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:52:25.847] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.848] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.848] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.848] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.848] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.848] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:52:25.848] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.849] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=73728,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.850] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.850] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:52:25.850] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=4096)
+<br/>[lazyfs] [2025-04-04 10:52:25.851] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=8192)
+<br/>[lazyfs] [2025-04-04 10:52:25.851] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=12288)
+<br/>[lazyfs] [2025-04-04 10:52:25.859] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.859] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.859] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.860] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.0_0.sample,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:25.860] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.0_0.sample,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:25.861] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample)
+</details>
+<details><summary>restartLog (168 lines)</summary>[umbra] Script started on 2025-04-04 10:52:44+00:00 [COMMAND="/docker-entrypoint.sh" <not executed on terminal>]
+<br/>[umbra] Using the existing database!
+<br/>[umbra] HOST_UID=1004
+<br/>[umbra] WAL_SYNC_METHOD=fsync
+<br/>[umbra] HOSTNAME=7a33cee4406b
+<br/>[umbra] CLANG_VERSION=19
+<br/>[umbra] GCC_VERSION=14
+<br/>[umbra] PWD=/lazyfs/lazyfs
+<br/>[umbra] UMBRA_DB=/var/db
+<br/>[umbra] CRASHCMD=
+<br/>[umbra] HOME=/home/local
+<br/>[umbra] RE2_VERSION=11
+<br/>[umbra] TERM=xterm
+<br/>[umbra] SHLVL=1
+<br/>[umbra] HOST_GID=1004
+<br/>[umbra] PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+<br/>[umbra] OLDPWD=/
+<br/>[umbra] _=/usr/bin/env
+<br/>[umbra] Starting the server!
+<br/>[umbra] INFO:    recovering log '/var/db/umbra.db.wal' after unexpected shutdown. This may take a while...
+<br/>[umbra] INFO:    recovered log '/var/db/umbra.db.wal' after unexpected shutdown.
+<br/>[umbra] INFO:    BEGIN (0.000022 s parsing, 0.000251 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.001217 s compilation, 0.000000 s transmission, 0.000035 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000003 s parsing, 0.000031 s compilation, 0.000000 s transmission, 0.000005 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000490 s compilation, 0.000000 s transmission, 0.000010 s execution)
+<br/>[umbra] INFO:    4 rows (0.000005 s parsing, 0.000947 s compilation, 0.000000 s transmission, 0.000340 s execution)
+<br/>[umbra] INFO:    COMMIT (0.000003 s parsing, 0.000087 s compilation, 0.000000 s transmission, 0.000007 s execution)
+<br/>[umbra] INFO:    BEGIN (0.000002 s parsing, 0.000101 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] INFO:    1 row (0.000002 s parsing, 0.000638 s compilation, 0.000000 s transmission, 0.000028 s execution)
+<br/>[umbra] INFO:    4 rows (0.000004 s parsing, 0.000794 s compilation, 0.000000 s transmission, 0.000074 s execution)
+<br/>[umbra] INFO:    COMMIT (0.000002 s parsing, 0.000070 s compilation, 0.000000 s transmission, 0.000006 s execution)
+<br/>[umbra] 
+<br/>[umbra] Script done on 2025-04-04 10:52:48+00:00 [COMMAND_EXIT_CODE="0"]
+<br/>[lazyfs] [2025-04-04 10:52:41.180] [global] [info] [lazyfs.config]: loading config...
+<br/>[lazyfs] [2025-04-04 10:52:41.180] [global] [info] [lazyfs.args]: config path is '/lazyfs/lazyfs/config/config.toml'
+<br/>[lazyfs] [2025-04-04 10:52:41.180] [global] [info] [lazyfs]: trying to create fifo '/tmp/faults.fifo'
+<br/>[lazyfs] [2025-04-04 10:52:41.180] [global] [info] [lazyfs.fifo]: faults fifo exists!
+<br/>[lazyfs] [2025-04-04 10:52:41.180] [global] [warning] [lazyfs.engine] pre-allocating 524288000 bytes...
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [warning] [engine] Pre-allocation finished
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [config] using a custom config
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [config] log all operations = true, logfile = '/tmp/lazyfs.log'
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [config] no. of pages   = 128000
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [config] page size      = 4096
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [config] block size     = 4096
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [config] blocks / page  = 1
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [config] apply eviction = false
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [config] total          = 512000 KiB, 500 MiB, 0.48828125 GiB
+<br/>[lazyfs] [2025-04-04 10:52:41.508] [global] [info] [lazyfs.fifo]: running LazyFS...
+<br/>[lazyfs] [2025-04-04 10:52:41.558] [global] [info] [lazyfs.faults.worker]: waiting for fault commands...
+<br/>[lazyfs] [2025-04-04 10:52:44.238] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.239] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/.umbra.db.lock,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.239] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.364] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:52:44.366] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.tmp,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.366] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.wal.tmp,to=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:52:44.366] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:52:44.366] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/.fuse_hidden0000000600000001)
+<br/>[lazyfs] [2025-04-04 10:52:44.426] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.pages,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.426] [global] [info] [lazyfs.ops]: lfs_readdir(path=/tmp/lazyfs.root/,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.pages,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.pages)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.cert,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.cert)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.pem,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.pem)
+<br/>[lazyfs] [2025-04-04 10:52:44.427] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.428] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:52:44.428] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.428] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:52:44.428] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.0_0.sample,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.428] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:52:44.429] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.429] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:52:44.429] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.430] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004)
+<br/>[lazyfs] [2025-04-04 10:52:44.430] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.430] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal,size=16384,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.430] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:52:44.430] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.431] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:52:44.431] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.431] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,mode=O_RDONLY)
+<br/>[lazyfs] [2025-04-04 10:52:44.435] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,size=73728,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.436] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=32768,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.440] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.440] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=65536)
+<br/>[lazyfs] [2025-04-04 10:52:44.442] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.442] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.442] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004)
+<br/>[lazyfs] [2025-04-04 10:52:44.443] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.444] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.wal,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.444] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.444] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000005,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.444] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.445] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:52:44.445] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.446] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:52:44.446] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:52:44.446] [global] [info] [lazyfs.ops]: lfs_open(path=/tmp/lazyfs.root/umbra.db.0_0.sample,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:44.446] [global] [info] [lazyfs.ops]: lfs_read(path=/tmp/lazyfs.root/umbra.db.0_0.sample,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:44.447] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:52:48.198] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.200] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004,size=4096,off=4096)
+<br/>[lazyfs] [2025-04-04 10:52:48.200] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.200] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.201] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.210] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.210] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:52:48.210] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.333] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.0_0.sample.5834374600175205336,mode=O_TRUNC)
+<br/>[lazyfs] [2025-04-04 10:52:48.333] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.0_0.sample.5834374600175205336,size=2044,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.334] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.0_0.sample.5834374600175205336,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:52:48.334] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.0_0.sample.5834374600175205336)
+<br/>[lazyfs] [2025-04-04 10:52:48.334] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.0_0.sample.5834374600175205336,to=/tmp/lazyfs.root/umbra.db.0_0.sample)
+<br/>[lazyfs] [2025-04-04 10:52:48.335] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.tmpschema,mode=O_TRUNC)
+<br/>[lazyfs] [2025-04-04 10:52:48.335] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.tmpschema,size=3532,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.336] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.tmpschema,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:52:48.336] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.tmpschema)
+<br/>[lazyfs] [2025-04-04 10:52:48.336] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.tmpschema,to=/tmp/lazyfs.root/umbra.db)
+<br/>[lazyfs] [2025-04-04 10:52:48.348] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:48.348] [global] [info] [lazyfs.ops]: lfs_truncate(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=659456)
+<br/>[lazyfs] [2025-04-04 10:52:48.349] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=659456,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.351] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.352] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=4096)
+<br/>[lazyfs] [2025-04-04 10:52:48.352] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=69632)
+<br/>[lazyfs] [2025-04-04 10:52:48.352] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=135168)
+<br/>[lazyfs] [2025-04-04 10:52:48.352] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=200704)
+<br/>[lazyfs] [2025-04-04 10:52:48.353] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=266240)
+<br/>[lazyfs] [2025-04-04 10:52:48.353] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=331776)
+<br/>[lazyfs] [2025-04-04 10:52:48.353] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=397312)
+<br/>[lazyfs] [2025-04-04 10:52:48.353] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=462848)
+<br/>[lazyfs] [2025-04-04 10:52:48.353] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=528384)
+<br/>[lazyfs] [2025-04-04 10:52:48.353] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,size=65536,off=593920)
+<br/>[lazyfs] [2025-04-04 10:52:48.354] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:52:48.354] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000)
+<br/>[lazyfs] [2025-04-04 10:52:48.354] [global] [info] [lazyfs.ops]: lfs_rename(from=/tmp/lazyfs.root/umbra.db.pages.doublewrite.temp.0000000000000000,to=/tmp/lazyfs.root/umbra.db.pages.doublewrite.0000000000000000)
+<br/>[lazyfs] [2025-04-04 10:52:48.354] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=589824)
+<br/>[lazyfs] [2025-04-04 10:52:48.355] [global] [info] [lazyfs.ops]: Calling a sparse write.
+<br/>[lazyfs] [2025-04-04 10:52:48.355] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=458752,off=131072)
+<br/>[lazyfs] [2025-04-04 10:52:48.357] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=65536)
+<br/>[lazyfs] [2025-04-04 10:52:48.357] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.358] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=524288)
+<br/>[lazyfs] [2025-04-04 10:52:48.358] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=458752)
+<br/>[lazyfs] [2025-04-04 10:52:48.358] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=393216)
+<br/>[lazyfs] [2025-04-04 10:52:48.358] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=327680)
+<br/>[lazyfs] [2025-04-04 10:52:48.358] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=196608)
+<br/>[lazyfs] [2025-04-04 10:52:48.359] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=262144)
+<br/>[lazyfs] [2025-04-04 10:52:48.359] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.pages,size=65536,off=131072)
+<br/>[lazyfs] [2025-04-04 10:52:48.359] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.pages,isdatasync=1)
+<br/>[lazyfs] [2025-04-04 10:52:48.360] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.pages.doublewrite.0000000000000000)
+<br/>[lazyfs] [2025-04-04 10:52:48.380] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.pages)
+<br/>[lazyfs] [2025-04-04 10:52:48.386] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.386] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:48.386] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:52:48.386] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:52:48.386] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000002)
+<br/>[lazyfs] [2025-04-04 10:52:48.386] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004)
+<br/>[lazyfs] [2025-04-04 10:52:48.386] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003)
+<br/>[lazyfs] [2025-04-04 10:52:48.387] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000004)
+<br/>[lazyfs] [2025-04-04 10:52:48.387] [global] [info] [lazyfs.ops]: lfs_create(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000006,mode=O_RDWR)
+<br/>[lazyfs] [2025-04-04 10:52:48.388] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000006)
+<br/>[lazyfs] [2025-04-04 10:52:48.388] [global] [info] [lazyfs.ops]: lfs_unlink(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000006)
+<br/>[lazyfs] [2025-04-04 10:52:48.388] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000005)
+<br/>[lazyfs] [2025-04-04 10:52:48.388] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/umbra.db.wal)
+<br/>[lazyfs] [2025-04-04 10:52:48.388] [global] [info] [lazyfs.ops]: lfs_release(path=/tmp/lazyfs.root/.umbra.db.lock)
+<br/>[lazyfs] [2025-04-04 10:52:51.342] [global] [info] [lazyfs]: stopping LazyFS...
+</details><br/></div><table><thead><tr><td></td><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td><td>16</td><td>17</td><td>18</td><td>19</td><td class="farRight">logs</td></tr></thead><tbody><tr><td class="farLeft"></td><td class="tableInner"><div class="event open">Transaction 0<br/>BEGIN<br/>4 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 1<br/>BEGIN<br/>5 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="eventNumber farLeft">0<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>1 line</summary>[lazyfs] [2025-04-04 10:52:29.603] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=16384)
+</details></td></tr><tr><td class="eventNumber farLeft">1<td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>5 lines</summary>[lazyfs] [2025-04-04 10:52:29.604] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=20480)
+<br/>[lazyfs] [2025-04-04 10:52:29.604] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:29.604] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=16384)
+<br/>[lazyfs] [2025-04-04 10:52:29.605] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=24576)
+<br/>[lazyfs] [2025-04-04 10:52:29.605] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal,isdatasync=0)
+</details></td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 2<br/>BEGIN<br/>7 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 3<br/>BEGIN<br/>4 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="eventNumber farLeft">2<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>3 lines</summary>[lazyfs] [2025-04-04 10:52:29.614] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,size=4096,off=28672)
+<br/>[lazyfs] [2025-04-04 10:52:29.614] [global] [info] [lazyfs.ops]: lfs_fsync(path=/tmp/lazyfs.root/umbra.db.wal.0000000000000003,isdatasync=0)
+<br/>[lazyfs] [2025-04-04 10:52:29.614] [global] [info] [lazyfs.ops]: lfs_write(path=/tmp/lazyfs.root/umbra.db.wal,size=4096,off=0)
+</details></td></tr><tr><td class="farLeft"></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event open">Transaction 4<br/>BEGIN<br/>3 statements</div><div class='openConnLine'></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight"><details><summary>10 lines</summary>[lazyfs] [2025-04-04 10:52:29.615] [global] [critical] Triggered fault condition (op=write,timing=after)
+<br/>[lazyfs] [2025-04-04 10:52:29.615] [global] [warning] [lazyfs.cmds]: report request submitted...
+<br/>[lazyfs] [2025-04-04 10:52:29.615] [global] [warning] [lazyfs.cmds]: report generated.
+<br/>[lazyfs] [2025-04-04 10:52:29.615] [global] [info] [lazyfs.cmds]: report: [inode 694845] is not fully synced, info:
+<br/>[lazyfs] [2025-04-04 10:52:29.615] [global] [info] [lazyfs.cmds]: report: [inode 694845] info: (block 0) to (block 0) [byte index 0 to index 4095]
+<br/>[lazyfs] [2025-04-04 10:52:29.615] [global] [info] [lazyfs.cmds]: report: [inode 694845] files mapped to this inode:
+<br/>[lazyfs] [2025-04-04 10:52:29.615] [global] [info] [lazyfs.cmds]: report: [inode 694845] => file: '/tmp/lazyfs.root/umbra.db.wal'
+<br/>[lazyfs] [2025-04-04 10:52:29.615] [global] [info] [lazyfs.cmds]: report: total number of bytes un-fsynced: 4096 bytes.
+<br/>[lazyfs] 
+<br/>[lazyfs] [2025-04-04 10:52:29.615] [global] [critical] Killing LazyFS pid 16!
+</details></td></tr><tr><td class="eventNumber farLeft">3<td class="tableInner"><div class="event insert">INSERT 1</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr><tr><td class="eventNumber farLeft">4<td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="event failure delete">DELETE 1<br/>Failure:<br/>server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.</div><div class='openConnLine'></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"><div class="openConnLine"></div></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="tableInner"></td><td class="farRight">0 lines</td></tr></tbody></table><br/><br/></body></html>
