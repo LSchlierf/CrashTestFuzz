@@ -12,6 +12,7 @@ WAL_FILES = {
     "postgres": "pg_wal/000000010000000000000001",
     "cedardb": "database/db.wal",
     "duckdb": "duck.db.wal",
+    "duckdb-assert": "duck.db.wal",
     "sqlite": "sqlite.db-journal"
 }
 

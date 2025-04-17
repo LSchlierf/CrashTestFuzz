@@ -495,7 +495,7 @@ def SUTTimestamp(line):
         (year, month, day, hour, minute, second, microsecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:26]))                
         return datetime.datetime(year, month, day, hour, minute, second, microsecond, datetime.UTC).timestamp()
     
-    if shared.SUT in ["duckdb", "sqlite"]:
+    if shared.SUT in ["duckdb", "duckdb-assert", "sqlite"]:
         if len(line) < 24 or line[0] != '[' or line[5] != '-' or line[8] != '-' or line[11] != '@' or line[14] != ':' or line[17] != ':' or line[20] != '.':
             return 0
         (year, month, day, hour, minute, second, microsecond) = (int(line[1:5]), int(line[6:8]), int(line[9:11]), int(line[12:14]), int(line[15:17]), int(line[18:20]), int(line[21:27]))
@@ -592,7 +592,7 @@ class apiCursor:
         return [tuple(v) for v in requests.post(f"http://127.0.0.1:{self._conn._port}/fetchall", json={"connID": self._conn._connID}).json()["result"]]
 
 def connect(port):
-    if shared.SUT in ["duckdb", "sqlite"]:
+    if shared.SUT in ["duckdb", "duckdb-assert", "sqlite"]:
         conn = apiConnection(port)
     elif shared.SUT == "postgres":
         conn = psycopg2.connect(user="postgres", host="localhost", port=port)
@@ -826,7 +826,7 @@ def waitUntilAvailable(id, port, timeout=0, kill=False, supressErrors=False):
             if "database system is ready to accept connections" in logs:
                 sleep(3)
                 return True
-        elif shared.SUT in ["duckdb", "sqlite"]:
+        elif shared.SUT in ["duckdb", "duckdb-assert", "sqlite"]:
             try:
                 if requests.get(f"http://127.0.0.1:{port}/ping").text == '"pong"':
                     sleep(3)
