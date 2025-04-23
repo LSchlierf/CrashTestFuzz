@@ -1,0 +1,3 @@
+[submodule "known-bugs"]
+	path = known-bugs
+	url = git@github.com:LSchlierf/CrashTestFuzz-discovered-bugs.git
