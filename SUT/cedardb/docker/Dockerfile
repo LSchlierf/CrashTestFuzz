@@ -1,4 +1,4 @@
-FROM cedardb
+FROM cedardb/cedardb:v2025-05-14
 # https://cedardb.com/docs/installation/
 
 USER root
@@ -26,7 +26,7 @@ RUN chmod a+w /lazyfs/lazyfs/config/config.toml
 COPY ./start.sh /start.sh
 RUN chmod 0755 /start.sh
 
-RUN echo "pkill -15 server" > /stop-cedardb.sh
+RUN echo "pkill -15 cedardb" > /stop-cedardb.sh
 RUN chmod +x /stop-cedardb.sh
 
 RUN echo "/stop-cedardb.sh && sleep 3 && /lazyfs/lazyfs/scripts/umount-lazyfs.sh -m /var/db && pkill tail" > /stop-all.sh

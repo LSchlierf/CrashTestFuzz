@@ -6,24 +6,20 @@ set -Eeuo pipefail
 # https://github.com/docker-library/postgres/blob/172544062d1031004b241e917f5f3f9dfebc0df5/17/bookworm/docker-entrypoint.sh
 
 version_check() {
-  if timeout 1 ping -c 1 download.cedardb.com > /dev/null 2>&1
-  	then CURRVERSION=$(curl -s https://download.cedardb.com/Dockerfile | tac | tac | head -n 4 | tail -n 1 |  awk -F'=' '{print $NF}')
-  	if test "$CURRVERSION" != "$CEDARDB_VERSION"
-  		then printf "
-[WARNING] CedarDB out of date: Your CedarDB version (%s) is out of date
- please upgrade to the newest version (%s) at https://cedardb.com/docs/installation
-
-" "$CEDARDB_VERSION" "$CURRVERSION"
-  		else printf "
-[INFO] You are running the most recent CedarDB version (%s)
-
-" "$CURRVERSION"
+  if timeout 1 ping -c 1 download.cedardb.com > /dev/null 2>&1; then
+  	LATEST_VERSION=$(curl -s https://download.cedardb.com/latest/version.txt)
+  	CEDAR_VERSION=$(exec cedardb --version | head -n1 | cut -d " " -f3)
+  	if test "$LATEST_VERSION" != "$CEDAR_VERSION"
+  		then printf "\n[WARNING] CedarDB out of date: Your CedarDB version (%s) is out of date\n[WARNING] Please upgrade to the newest version (%s) at https://cedardb.com/docs/installation\n\n" "$CEDAR_VERSION" "$LATEST_VERSION"
+  		else printf "\n[INFO] You are running the most recent CedarDB version (%s)\n\n" "$LATEST_VERSION"
   	fi
-  	else printf "
-[WARNING] Could not check CedarDB version
-
-"
+  	else printf "\n[WARNING] Could not check CedarDB version\n\n"
   fi
+}
+
+# Upgrade schema to the newest version
+upgrade_schema() {
+  schemaupgrade.py "$CEDARDB_DATA/database"
 }
 
 # usage: file_env VAR [DEFAULT]
@@ -35,8 +31,7 @@ file_env() {
 	local fileVar="${var}_FILE"
 	local def="${2:-}"
 	if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
-		printf >&2 'error: both %s and %s are set (but are exclusive)
-' "$var" "$fileVar"
+		printf >&2 'error: both %s and %s are set (but are exclusive)\n' "$var" "$fileVar"
 		exit 1
 	fi
 	local val="$def"
@@ -88,9 +83,8 @@ docker_verify_minimum_env() {
 
 # Set up the database directory and instantly quit again
 create_db_files() {
-  printf "[INFO] Setting up database directory
-"
-  sql -createdb "$CEDARDB_DATA/database" /dev/null <(echo "\q") > /dev/null 2>&1
+  printf "[INFO] Setting up database directory\n"
+  cedardb -interactive -createdb "$CEDARDB_DATA/database" /dev/null <(echo "\q") > /dev/null 2>&1
 }
 
 
@@ -114,8 +108,7 @@ setup_db() {
   local userAlreadyExists
 	local dbAlreadyExists
 
-  printf "[INFO] Creating superuser: %s
-"  "$CEDAR_USER"
+  printf "[INFO] Creating superuser: %s\n"  "$CEDAR_USER"
   userAlreadyExists="$(
     process_sql --dbname postgres -U postgres --set user="$CEDAR_USER" --tuples-only <<-'EOSQL'
 			SELECT 1 FROM pg_user WHERE usename = :'user' ;
@@ -130,14 +123,12 @@ setup_db() {
   else
     # User does exist (i.e., user chose the default user name). Change the password to the given one.
     process_sql --dbname postgres -U postgres --set user="$CEDAR_USER" --set pw="$CEDAR_PASSWORD" <<-'EOSQL'
-			ALTER USER :user WITH PASSWORD :'pw' SUPERUSER;
+			ALTER USER :user WITH PASSWORD :'pw';
 		EOSQL
   fi
-  printf '
-'
+  printf '\n'
 
-  printf "[INFO] Creating database: %s
-" "$CEDAR_DB"
+  printf "[INFO] Creating database: %s\n" "$CEDAR_DB"
   dbAlreadyExists="$(
     process_sql --dbname postgres -U postgres --set db="$CEDAR_DB" --tuples-only <<-'EOSQL'
 			SELECT 1 FROM pg_database WHERE datname = :'db' ;
@@ -147,12 +138,10 @@ setup_db() {
     process_sql --dbname postgres -U postgres --set db="$CEDAR_DB" <<-'EOSQL'
 			CREATE DATABASE :"db" ;
 		EOSQL
-    printf '
-'
+    printf '\n'
   fi
 
-  printf "[INFO] Done setting up database
-"
+  printf "[INFO] Done setting up database\n"
 
 }
 
@@ -160,7 +149,7 @@ setup_db() {
 # Specify an empty address to ensure this temporary step isn't
 # observable externally
 start_temp_db() {
-  exec server "$CEDARDB_DATA/database" -address="" "-port=$CEDARDB_PORT" "$@" > /dev/null 2>&1 &
+  exec cedardb "$CEDARDB_DATA/database" -address="" "-port=$CEDARDB_PORT" "$@" > /dev/null 2>&1 &
   # Remember the pid to stop the server again later on
   CEDAR_PID="$!"
   # Wait for the server to run
@@ -180,8 +169,7 @@ stop_temp_db() {
 #    ie: docker_process_init_files /always-initdb.d/*
 # process initializer files, based on file extensions and permissions
 process_init_files() {
-	printf '
-'
+	printf '\n'
 	local f
 	for f; do
 		case "$f" in
@@ -189,32 +177,20 @@ process_init_files() {
 				# https://github.com/docker-library/postgres/issues/450#issuecomment-393167936
 				# https://github.com/docker-library/postgres/pull/452
 				if [ -x "$f" ]; then
-					printf '%s: running %s
-' "$0" "$f"
+					printf '%s: running %s\n' "$0" "$f"
 					"$f"
 				else
-					printf '%s: sourcing %s
-' "$0" "$f"
+					printf '%s: sourcing %s\n' "$0" "$f"
 					. "$f"
 				fi
 				;;
-			*.sql)     printf '%s: running %s
-' "$0" "$f"; process_sql -U "$CEDAR_USER" -f "$f"; printf '
-' ;;
-			*.sql.gz)  printf '%s: running %s
-' "$0" "$f"; gunzip -c "$f" | process_sql -U "$CEDAR_USER"; printf '
-' ;;
-			*.sql.xz)  printf '%s: running %s
-' "$0" "$f"; xzcat "$f" | process_sql -U "$CEDAR_USER"; printf '
-' ;;
-			*.sql.zst) printf '%s: running %s
-' "$0" "$f"; zstd -dc "$f" | process_sql -U "$CEDAR_USER"; printf '
-' ;;
-			*)         printf '%s: ignoring %s
-' "$0" "$f" ;;
+			*.sql)     printf '%s: running %s\n' "$0" "$f"; process_sql -U "$CEDAR_USER" -f "$f"; printf '\n' ;;
+			*.sql.gz)  printf '%s: running %s\n' "$0" "$f"; gunzip -c "$f" | process_sql -U "$CEDAR_USER"; printf '\n' ;;
+			*.sql.xz)  printf '%s: running %s\n' "$0" "$f"; xzcat "$f" | process_sql -U "$CEDAR_USER"; printf '\n' ;;
+			*.sql.zst) printf '%s: running %s\n' "$0" "$f"; zstd -dc "$f" | process_sql -U "$CEDAR_USER"; printf '\n' ;;
+			*)         printf '%s: ignoring %s\n' "$0" "$f" ;;
 		esac
-		printf '
-'
+		printf '\n'
 	done
 }
 
@@ -222,9 +198,8 @@ fix_permissions() {
     # Did someone bind mount the data directory with the wrong permissions?
     if [ 999 != "$(stat -c '%u' "$CEDARDB_DATA")" ] && [ -z "$DATABASE_ALREADY_EXISTS" ]
     then
-      printf "[INFO] Fixing permissions on existing directory %s
-" "$CEDARDB_DATA"
-      chown 999 "$CEDARDB_DATA"
+      printf "[INFO] Fixing permissions on existing directory %s\n" "$CEDARDB_DATA"
+      chown 1000 "$CEDARDB_DATA"
     fi
 }
 
@@ -254,22 +229,20 @@ main() {
     unset PGPASSWORD
     stop_temp_db
 
-    printf '[INFO] CedarDB init process complete.
-'
+    printf '[INFO] CedarDB init process complete.\n'
   else
     # Else just start the db
-    printf '[INFO] CedarDB Database directory appears to contain a database; Skipping initialization.
-'
+    printf '[INFO] CedarDB Database directory appears to contain a database; Skipping initialization.\n'
+    upgrade_schema
   fi
 
   version_check
 
   # Finally start the database for good
   if test -f "$CEDARDB_DATA/key.pem"
-     then exec server "$CEDARDB_DATA/database" -address=:: "-port=$CEDARDB_PORT" "$@"
-     else exec server "$CEDARDB_DATA/database" -address=:: "-port=$CEDARDB_PORT" -createSSLFiles "$@"
+     then exec cedardb "$CEDARDB_DATA/database" -address=:: "-port=$CEDARDB_PORT" "$@"
+     else exec cedardb "$CEDARDB_DATA/database" -address=:: "-port=$CEDARDB_PORT" -createSSLFiles "$@"
   fi
 }
 
 main "$@"
-
