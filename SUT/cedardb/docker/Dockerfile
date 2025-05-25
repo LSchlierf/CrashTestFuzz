@@ -47,10 +47,9 @@ ENV ASYNCCOMMITS=off
 # if user with HOST_UID exists, change name to "local" else create with name "local"
 RUN if [ $(getent passwd ${HOST_UID}) ]; then LOCALNAME=$(getent passwd ${HOST_UID} | cut -f 1 -d ":") && usermod -l local ${LOCALNAME} && groupmod -n local ${LOCALNAME} ; else groupadd --gid ${HOST_GID} local && useradd --uid ${HOST_UID} --gid ${HOST_GID} local ; fi
 
-COPY ./docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod a+x /docker-entrypoint.sh
-RUN chmod a+r /docker-entrypoint.sh
-RUN chown -R $HOST_UID:$HOST_GID /docker-entrypoint.sh
+RUN chmod a+x /usr/local/bin/docker-entrypoint.sh
+RUN chmod a+r /usr/local/bin/docker-entrypoint.sh
+RUN chown $HOST_UID:$HOST_GID /usr/local/bin/docker-entrypoint.sh
 
 # run cedardb as local user
 RUN chown -R $HOST_UID:$HOST_GID /var/lib/cedardb
