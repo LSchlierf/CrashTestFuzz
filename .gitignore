@@ -3,6 +3,7 @@
 __pycache__
 todo.txt
 pyrightconfig.json
+venv.sh
 
 # data ignores
 logs

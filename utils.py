@@ -489,7 +489,7 @@ def SUTTimestamp(line):
         (year, month, day, hour, minute, second, millisecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:23]))
         return datetime.datetime(year, month, day, hour, minute, second, millisecond * 1000, datetime.UTC).timestamp()
     
-    if shared.SUT == "cedardb":
+    if shared.SUT.startswith("cedarb"):
         if len(line) < 24 or line[4] != '-' or line[7] != '-' or line[10] != ' ' or line[13] != ':' or line[16] != ':' or line[19] != '.':
             return 0
         (year, month, day, hour, minute, second, microsecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:26]))                

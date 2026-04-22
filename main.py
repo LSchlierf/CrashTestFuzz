@@ -11,6 +11,8 @@ WAL_FILES = {
     "umbra-assert": "umbra.db.wal",
     "postgres": "pg_wal/000000010000000000000001",
     "cedardb": "database/db.wal",
+    "cedardb-latest": "database/db.wal",
+    "cedardb-local": "database/db.wal",
     "duckdb": "duck.db.wal",
     "duckdb-assert": "duck.db.wal",
     "sqlite": "sqlite.db-journal"
