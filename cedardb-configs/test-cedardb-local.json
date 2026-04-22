@@ -1,0 +1,31 @@
+{
+  "sut": "cedardb-local",
+  "num_transactions": 15,
+  "concurrent_transactions_avg": 2.0,
+  "concurrent_transactions_var": 2.0,
+  "transaction_size_avg": 10.0,
+  "transaction_size_var": 2.0,
+  "statement_size_avg": 1.0,
+  "statement_size_var": 0.0,
+  "p_commit": 0.6,
+  "p_insert": 1.0,
+  "p_update": 0.0,
+  "p_serialization_failure": 0.0,
+  "verify": false,
+  "concurrent": 10,
+  "log": "all",
+  "sync_method": "fsync",
+  "checkpoint": false,
+  "walfile": [
+    "auto"
+  ],
+  "operation": [
+    "fsync"
+  ],
+  "timing": [
+    "before"
+  ],
+  "steps": 10,
+  "recursion_depth": 1,
+  "recursion_factor": 1
+}
