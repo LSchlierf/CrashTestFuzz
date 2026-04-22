@@ -44,7 +44,7 @@ def collectAndExport(path):
             
             for _ in range(depth):
                 parent = data[0]["parentID"]
-                utils.debug("collecting parent", parent, level=1)
+                utils.debug("collecting parent", parent, level=2)
                 parentFile = os.sep.join(path.split(os.sep)[:-1] + [parent + ".json"])
                 if not os.path.exists(parentFile):
                     utils.error("Parent not found:", parent)

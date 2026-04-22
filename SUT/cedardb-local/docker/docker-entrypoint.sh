@@ -49,12 +49,14 @@ setup_env() {
 create_db_files() {
   printf "[INFO] Setting up database directory\n"
   cedardb -interactive -createdb "$CEDARDB_DATA/database" /dev/null <(echo "\q") > /dev/null 2>&1
+  printf "done.\n"
 }
 
 # Execute a sql query with the postgres user for setting up
 process_sql_setup() {
-  # echo "[INFO] Running Setup SQL: $1" 1>&2
+  printf "[INFO] Running Setup SQL\n"
   cedardb -interactive "$CEDARDB_DATA/database" /dev/null <(echo "$1") 2>/dev/null
+  printf "done.\n"
 }
 
 # quote a sql identifier

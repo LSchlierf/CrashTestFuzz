@@ -146,7 +146,7 @@ def runSeeds(makeLog, seeds):
         if not metadata["successful"]:
             error("first run failed, seed", seed)
             if makeLog in ["all", "failed"]:
-                mergeLogs(metadata, log, duplicateID)
+                mergeLogs(metadata, log, duplicateID, 3)
                 logAll(seed, duplicateID, metadata, log)
             cleanupContainer(duplicateID)
             return
@@ -266,9 +266,15 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
         content = parentContent
     
     else:
-        verify(shared.DB_TABLENAME, parentContent, port)
+        if not verify(shared.DB_TABLENAME, parentContent, port, supressErrors=True):
+            error("Incorrect content in workload duplicate")
+            sleep(10)
+            if not verify(shared.DB_TABLENAME, parentContent, port, supressErrors=True):
+                error("Persistent incorrect content")
+            else:
+                error("Volatile incorrect content")
         (content, metadata, log) = runWorkload(port, childID, seed, True, dbContent=parentContent)
-        mergeLogs(metadata, log, childID)
+        mergeLogs(metadata, log, childID, 3)
         startup = True
         testMetadata["traceHash"] = traceHash(log)
         stopContainer(childID, supressErrors=True)
@@ -429,6 +435,22 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
     
     if remainingDepth == 0:
         debug("recursion floor reached", level=1)
+        cleanupContainer(childID)
+        return
+    
+    debug("Starting secondary verification duplicate", level=1)
+
+    verificationDuplicateID2 = duplicateContainer(childID)
+    port = runContainer(verificationDuplicateID2)
+    if not waitUntilAvailable(verificationDuplicateID2, port, 90, supressErrors=True):
+        error("secondary verification duplicate didn't start")
+        cleanupContainer(verificationDuplicateID2)
+        cleanupContainer(childID)
+        return
+    
+    if not verify(shared.DB_TABLENAME, content, port, supressErrors=True):
+        error("Mismatch between primary and secondary verification duplicate")
+        cleanupContainer(verificationDuplicateID2)
         cleanupContainer(childID)
         return
 

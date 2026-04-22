@@ -489,7 +489,7 @@ def SUTTimestamp(line):
         (year, month, day, hour, minute, second, millisecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:23]))
         return datetime.datetime(year, month, day, hour, minute, second, millisecond * 1000, datetime.UTC).timestamp()
     
-    if shared.SUT.startswith("cedarb"):
+    if shared.SUT.startswith("cedardb"):
         if len(line) < 24 or line[4] != '-' or line[7] != '-' or line[10] != ' ' or line[13] != ':' or line[16] != ':' or line[19] != '.':
             return 0
         (year, month, day, hour, minute, second, microsecond) = (int(line[0:4]), int(line[5:7]), int(line[8:10]), int(line[11:13]), int(line[14:16]), int(line[17:19]), int(line[20:26]))                
@@ -509,7 +509,9 @@ def lazyfsTimestamp(line):
     (year, month, day, hour, minute, second, millisecond) = (int(line[1:5]), int(line[6:8]), int(line[9:11]), int(line[12:14]), int(line[15:17]), int(line[18:20]), int(line[21:24]))
     return datetime.datetime(year, month, day, hour, minute, second, millisecond * 1000, datetime.UTC).timestamp()
 
-def mergeLogs(metadata, log, containerID):
+def mergeLogs(metadata, log, containerID, delay=0):
+    if delay > 0:
+        sleep(delay)
     lazyfslogs = [line for line in readLogs(containerID, "lazyfs") if not "lfs_getattr(" in line]
     sutlogs = readLogs(containerID, shared.SUT)
     
@@ -526,6 +528,9 @@ def mergeLogs(metadata, log, containerID):
                 target.append(f"[lazyfs] {lazyfslogs.pop(0)}")
             else:
                 target.append(f"[{shared.SUT}] {sutlogs.pop(0)}")
+
+    if len(sutlogs) + len(lazyfslogs) > 0:
+        error("logs left over")
 
 def addLog(metadata, containerID, dest="restartLog"):
     lazyfslogs = [line for line in readLogs(containerID, "lazyfs") if not "lfs_getattr(" in line]
