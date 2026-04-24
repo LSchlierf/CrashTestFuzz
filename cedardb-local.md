@@ -2,7 +2,7 @@
 
 ## Step 0: How to run CrashTestFuzz on the latest public CedarDB version
 
-We do this to make sure that CrashTestFuzz runs with a working configuration.
+We do this to make sure that CrashTestFuzz runs with a working configuration. Alternatively, you can get straight to testing your new binary.
 
 Install dependencies:
 
@@ -15,11 +15,17 @@ sudo apt update && sudo apt install python3 python3-dev libpq-dev
 pip install psycopg2 requests
 ```
 
+If you want to get straight to testing your newly compiled cedardb version instead of the latest public build, skip ahead to [Step 1](#step-1-link-cedardb)
+
 Run on the latest CedarDB version:
 
 ```sh
 python3 main.py -x cedardb-configs/test-cedardb-latest.json -r 0
 ```
+
+This will take a while (>10m).
+
+If you want to know how to interpret the output, jump to [Step 3](#step-3-interpreting-the-output).
 
 ## Step 1: Link CedarDB
 
