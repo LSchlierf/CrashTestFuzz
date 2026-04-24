@@ -6,7 +6,7 @@ We do this to make sure that CrashTestFuzz runs with a working configuration. Al
 
 Install dependencies:
 
-- Install docker and make sure your local user can issue dokcer commands by adding yourself to group docker.
+- Install docker and make sure your local user can issue docker commands by adding yourself to group docker.
 - Python dependencies:
 
 ```sh
