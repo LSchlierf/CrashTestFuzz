@@ -15,7 +15,7 @@ pip install psycopg2 requests
 Run on the latest CedarDB version:
 
 ```sh
-python3 main.py -x demo-configs/test-generic.json --sut cedardb-latest -r 0
+python3 main.py -x cedardb-configs/test-cedardb-latest.json -r 0
 ```
 
 ## Step 1: Link CedarDB
