@@ -68,9 +68,9 @@ Workload run hurdle index (at which point the filesystem crashes):
 ...
 ```
 
-These are the files for depth 1. 
+These are the files for depth 0.
 
-Every container (except `initial-success` amd `incorrect-content` ones) are duplicated after their workload run, and recovery and another workload is run on them for depth 2:
+Every container (except `initial-success` amd `incorrect-content` ones) is duplicated after their workload run, and recovery and another workload is run on them for depth 1:
 
 ```
 0 -> 0-(slim|wide).json
