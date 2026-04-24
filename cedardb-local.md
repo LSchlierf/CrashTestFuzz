@@ -6,6 +6,9 @@ We do this to make sure that CrashTestFuzz runs with a working configuration.
 
 Install dependencies:
 
+- Install docker and make sure your local user can issue dokcer commands by adding yourself to group docker.
+- Python dependencies:
+
 ```sh
 sudo apt update && sudo apt install python3 python3-dev libpq-dev
 
@@ -114,6 +117,8 @@ This table shows all transactions with each action that happened on them in orde
 **Right side of the table**: This side show the collected logs from cedardb and lazyfs in dropdown menus, matched to the correct action that they occured after.
 
 Above the table, there is an additional drop down menus with the logs from before the workload execution started (`initial log`) and during the recovery of the verification duplicate (`restartLog`).
+
+If the container crashed during recovery, there will be no trace table (since we didn't execute any workload), but instead a `startupLog`, which shows the merged logs during startup and recovery. This will usually also have the stacktrace.
 
 #### Mismatch table
 
