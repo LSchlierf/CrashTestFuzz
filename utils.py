@@ -46,7 +46,7 @@ def info(*msg):
 # WORKLOAD UTILS #
 ##################
 
-def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbContent=[]):
+def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbContent=[], depth=0):
     """runs a workload on a given postgres port
     
     Arguments:
@@ -160,7 +160,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                 
                 stmtType = "insert"
                 metadata["numInsert"] += 1
-                values = [(len(currConn["localContent"]) + i, aid) for i in range(count)]
+                values = [(len(currConn["localContent"]) + i, aid, currConn["id"], depth) for i in range(count)]
                 
                 debug("insert", count, "on transaction", currConn["id"], values, level=4)
                 
@@ -226,7 +226,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                 
                 try:
                     
-                    update(currConn["c"], valsToEdit, aid)
+                    update(currConn["c"], valsToEdit, aid, currConn["id"], depth)
                     if expectCC:
                         if verification:
                             error("Expected concurrency conflict")
@@ -234,7 +234,7 @@ def runWorkload(port, id, seed=None, makeLog=False, verification=False, dbConten
                             log.append({"result": "failure", "logs": [], "details": "expected concurrency conflict"})
                         metadata["result"] = "expected-concurrency-conflict"
                         return (dbContent, metadata, log)
-                    clientUpdate((currConn["localContent"], (valsToEdit, aid)))
+                    clientUpdate((currConn["localContent"], (valsToEdit, aid, currConn["id"], depth)))
                     currConn["lockedVals"] |= set(valsToEdit)
                     lockedItems |= set(valsToEdit)
                 
@@ -628,30 +628,30 @@ def clientInsert(args):
     (content, values) = args
     content[len(content):] = values
 
-def update(conn, vals, newAction):
+def update(conn, vals, newAction, newTid, newDepth):
     cur = conn.cursor()
     if shared.SUT == "postgres":
         cur.execute("SELECT * FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + " FOR UPDATE NOWAIT;")
-        cur.execute("UPDATE " + shared.DB_TABLENAME + " SET b = " + str(newAction) + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
+        cur.execute("UPDATE " + shared.DB_TABLENAME + " SET b = " + str(newAction) + ", c = " + str(newTid) + ", d = " + str(newDepth) + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + " and c = " + str(c) + " and d = " + str(d) + ")" for (a, b, c, d) in vals]) + ";")
     else:
-        cur.execute("UPDATE " + shared.DB_TABLENAME + " SET b = " + str(newAction) + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
+        cur.execute("UPDATE " + shared.DB_TABLENAME + " SET b = " + str(newAction) + ", c = " + str(newTid) + ", d = " + str(newDepth) + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + " and c = " + str(c) + " and d = " + str(d) + ")" for (a, b, c, d) in vals]) + ";")
     debug(cur.rowcount, level=4)
 
 def clientUpdate(args):
     (content, vals) = args
-    (valsToEdit, newAction) = vals
+    (valsToEdit, newAction, newTid, newDepth) = vals
     for i in range(len(content)):
-        (a, b) = content[i]
-        if (a, b) in valsToEdit:
-            content[i] = (a, newAction)
+        (a, b, c, d) = content[i]
+        if (a, b, c, d) in valsToEdit:
+            content[i] = (a, newAction, newTid, newDepth)
 
 def delete(conn, vals):
     cur = conn.cursor()
     if shared.SUT == "postgres":
-        cur.execute("SELECT * FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + " FOR UPDATE NOWAIT;")
-        cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
+        cur.execute("SELECT * FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + " and c = " + str(c) + " and d = " + str(d) + ")" for (a, b, c, d) in vals]) + " FOR UPDATE NOWAIT;")
+        cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + " and c = " + str(c) + " and d = " + str(d) + ")" for (a, b, c, d) in vals]) + ";")
     else:
-        cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + ")" for (a, b) in vals]) + ";")
+        cur.execute("DELETE FROM " + shared.DB_TABLENAME + " WHERE " + " or ".join(["(a = " + str(a) + " and b = " + str(b) + " and c = " + str(c) + " and d = " + str(d) + ")" for (a, b, c, d) in vals]) + ";")
     debug(cur.rowcount, level=4)
 
 def clientDelete(args):

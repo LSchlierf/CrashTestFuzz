@@ -10,7 +10,7 @@ from utils import *
 
 test_db = {
     "name": shared.DB_TABLENAME,
-    "schema": [("a", "int"), ("b", "int")]
+    "schema": [("a", "int"), ("b", "int"), ("c", "int"), ("d", "int")]
 }
 
 parents = {}
@@ -273,7 +273,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
                 error("Persistent incorrect content")
             else:
                 error("Volatile incorrect content")
-        (content, metadata, log) = runWorkload(port, childID, seed, True, dbContent=parentContent)
+        (content, metadata, log) = runWorkload(port, childID, seed, True, dbContent=parentContent, depth=depth)
         mergeLogs(metadata, log, childID, 3)
         startup = True
         testMetadata["traceHash"] = traceHash(log)
@@ -466,7 +466,7 @@ def runIteration(parentID, parentTemplateID, parentContent, batch, number, seed,
         cleanupContainer(childID)
         return
 
-    _ = runWorkload(port, analysisDuplicateID, seed, True, dbContent=content)
+    _ = runWorkload(port, analysisDuplicateID, seed, True, dbContent=content, depth=depth+1)
 
     stopSUT(analysisDuplicateID)
 

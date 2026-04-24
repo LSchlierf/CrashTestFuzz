@@ -402,7 +402,7 @@ Expected: {len(expected)} total<br/>Actual: {len(actual)} total<table>
             return -1
         return 0
 
-    complete = [(b,a) for (a,b) in sorted([(b,a) for (a,b) in expected | actual], key=cmp_to_key(compare))]
+    complete = [(d,c,b,a) for (a,b,c,d) in sorted([(d,c,b,a) for (a,b,c,d) in expected | actual], key=cmp_to_key(compare))]
     
     expected = [(i if i in expected else "") for i in complete]
     actual = [(i if i in actual else "") for i in complete]

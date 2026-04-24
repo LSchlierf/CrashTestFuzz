@@ -2,7 +2,7 @@
 
 ## Step 0: How to run CrashTestFuzz on the latest public CedarDB version
 
-We do this to make sure that CrashTEstFuzz runs with a working configuration.
+We do this to make sure that CrashTestFuzz runs with a working configuration.
 
 Install dependencies:
 
@@ -121,7 +121,13 @@ The most interesting reports are `incorrect-content` and `incorrect-parent-conte
 
 Data items that are only in one of these states are marked in red.
 
-The first part `a` of these tuples (`a`, `b`) refers to the number of data items present in the table before its insertion (note snapshot isolation), and the secont part `b` refers to the action (comparable to an LSN). This allows you to look up which transaction the tuple was inserted (or modified) on, in order to identify whether a loser transaction got (partially) persisted, a winner transaction was (partially) lost, or else.
+The data items are 4-tuples (`a`,`b`,`c`,`d`), with each part having semantic meaning:
+- `a`: the size of the table before its insertion (note snapshot isolation)
+- `b`: the action (comparable to LSN), see left side of the transaction trace table
+- `c`: the transaction ID, see top bar of the table
+- `d`: the depth, basically the index of the transaction trace table, starting at the top with 0.
+
+Reading these tuples allows you to match a tuple to the action and transaction where it was inserted / last modified in order to assess whether a winner transaction was lost, a loser transaction was persisted, or something else happened.
 
 ## Misc
 
@@ -129,9 +135,9 @@ The first part `a` of these tuples (`a`, `b`) refers to the number of data items
 
 Sometimes CrashTestFuzz crashes or spits out an error in the shape of "another instance of CrashTestFuzz is running".
 
-Make sure that no other instance of CrashTestFuzz is running on your machine.
+Make sure that no other instance of CrashTestFuzz is running on your machine. CrashTestFuzz uses a tmpfs to store all the container data at `/dev/shm/ctf/[SUT]`, which gets symlinked to the correct SUT directory, in this case `cedardb-local`.
 
-In this case:
+If no other instance is running:
 - Clean up all orphaned docker containers (will always have a name in the shape of `lazycedardb-local-[uuid]`)
 - Delete the docker image `lazycedardb-local`
 - Delete the directory `SUT/cedardb-local/container` and all its contents
@@ -139,6 +145,10 @@ In this case:
 
 Then try again.
 
-### Paper
+### Other Resources
 
-[here](https://talks.db.in.tum.de/uploads/67/fb27c88359422cbb4df1227a627ef0/thesis.pdf)
+[Main README](./README.md)
+
+[CrashTestFuzz Thesis](https://talks.db.in.tum.de/uploads/67/fb27c88359422cbb4df1227a627ef0/thesis.pdf)
+
+[Lucas :)](https://cedardbworkspace.slack.com/team/U0ASKCDM475)
