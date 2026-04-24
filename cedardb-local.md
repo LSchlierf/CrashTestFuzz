@@ -144,7 +144,11 @@ Reading these tuples allows you to match a tuple to the action and transaction w
 
 ### Frequent Errors (and how to fix them)
 
+#### Another instance is running
+
 Sometimes CrashTestFuzz crashes or spits out an error in the shape of "another instance of CrashTestFuzz is running".
+
+This usually happens after CrashTestFuzz exits abnormally.
 
 Make sure that no other instance of CrashTestFuzz is running on your machine. CrashTestFuzz uses a tmpfs to store all the container data at `/dev/shm/ctf/[SUT]`, which gets symlinked to the correct SUT directory, in this case `cedardb-local`.
 
@@ -155,6 +159,12 @@ If no other instance is running:
 - Delete the directory `/dev/shm/ctf` and all its contents
 
 Then try again.
+
+There is also a cleanup script in each SUT's `script` directory called `cleanup-all.sh`. This needs to be with your cwd set to the script's contianing directory, e.g.: `cd SUT/cedardb-local/scripts && sh cleanup-all.sh`. This script does everything except clear the `/dev/shm/ctf/[SUT]` entry.
+
+#### ulimit
+
+Don't adjust these in the run-container scripts, prefer adjusting your host maximum or run less containers in parallel using the `-c [n]` cli flag or `concurrent` json config entry (default 10).
 
 ### Other Resources
 
